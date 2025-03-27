@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load the .npy file
-path = '/Users/omaraguilarjr/Downloads/1.npy'
+path = '/Users/omaraguilarjr/Library/CloudStorage/OneDrive-GeorgiaInstituteofTechnology/openEDS2019/openEDS/openEDS/S_0/150.npy'
 data = np.load(path)
 
 # Display as image
