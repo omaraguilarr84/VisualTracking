@@ -1,0 +1,6 @@
+* blinking
+* in subject 1, includes eyelashes
+* is it actually real time
+* test histogdram equalization input
+* bounding box error
+* overlay on segmentation labels to see error for each anatomical part
