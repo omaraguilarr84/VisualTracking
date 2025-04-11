@@ -6,8 +6,11 @@ Created on Mon Sep  2 11:22:32 2019
 @author: aayush
 """
 
-# python train.py --model densenet_og --expname TRAIN_OG --bs 16 --epochs 10 --useGPU True --dataset ../../../../../../../../storage/ice1/shared/bmed6780/mip_group_4/'openEDS Dataset'/openEDS/openEDS/
+# python train.py --model densenet_og --expname TRAIN_OG --bs 16 --epochs 10 --useGPU True --dataset ../../../../../../../storage/ice1/shared/bmed6780/mip_group_4/'openEDS Dataset'/openEDS/openEDS/
 
+import os
+import sys
+sys.path.append('/models')
 from models import model_dict
 from torch.utils.data import DataLoader 
 from dataset import IrisDataset
@@ -16,7 +19,7 @@ from utils import mIoU, CrossEntropyLoss2d,total_metric,get_nparams,Logger,Gener
 import numpy as np
 from dataset import transform
 from opt import parse_args
-import os
+# import os
 from utils import get_predictions
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -78,7 +81,7 @@ if __name__ == '__main__':
         print ("valid models are:",list(model_dict.keys()))
         exit(1)
     
-    LOGDIR = '../../scratch/train/logs/{}'.format(args.expname)
+    LOGDIR = '../../../../scratch/train/logs/{}'.format(args.expname)
     os.makedirs(LOGDIR,exist_ok=True)
     os.makedirs(LOGDIR+'/models',exist_ok=True)
     logger = Logger(os.path.join(LOGDIR,'logs.log'))
@@ -178,9 +181,9 @@ if __name__ == '__main__':
             # os.makedirs('test/epoch/output/',exist_ok=True)
             # os.makedirs('test/epoch/mask/',exist_ok=True)
 
-            os.makedirs('../../scratch/train/test/epoch/labels/', exist_ok=True)
-            os.makedirs('../../scratch/train/test/epoch/output/', exist_ok=True)
-            os.makedirs('../../scratch/train/test/epoch/mask/', exist_ok=True)
+            os.makedirs('../../../../scratch/train/test/epoch/labels/', exist_ok=True)
+            os.makedirs('../../../../scratch/train/test/epoch/output/', exist_ok=True)
+            os.makedirs('../../../../scratch/train/test/epoch/mask/', exist_ok=True)
             
             with torch.no_grad():
                 for i, batchdata in tqdm(enumerate(testloader),total=len(testloader)):
@@ -189,9 +192,9 @@ if __name__ == '__main__':
                     output = model(data)            
                     predict = get_predictions(output)
                     for j in range (len(index)):       
-                        np.save('../../scratch/train/test/epoch/labels/{}.npy'.format(index[j]),predict[j].cpu().numpy())
+                        np.save('../../../../scratch/train/test/epoch/labels/{}.npy'.format(index[j]),predict[j].cpu().numpy())
                         try:
-                            plt.imsave('../../scratch/train/test/epoch/output/{}.jpg'.format(index[j]),255*labels[j].cpu().numpy())
+                            plt.imsave('../../../../scratch/train/test/epoch/output/{}.jpg'.format(index[j]),255*labels[j].cpu().numpy())
                         except:
                             pass
                         pred_img = predict[j].cpu().numpy()/3.0
@@ -199,7 +202,7 @@ if __name__ == '__main__':
                         img_orig = np.clip(inp,0,1)
                         img_orig = np.array(img_orig)
                         combine = np.hstack([img_orig,pred_img])
-                        plt.imsave('../../scratch/train/test/epoch/mask/{}.jpg'.format(index[j]),combine)
+                        plt.imsave('../../../../scratch/train/test/epoch/mask/{}.jpg'.format(index[j]),combine)
     
     end = time()
     print(f"Total training time: {(end-start)/60} mins")
