@@ -6,13 +6,16 @@ Created on Sun Sep  8 18:50:11 2019
 @author: manoj
 """
 
-
-from densenet_og import DenseNet2D
-from mobilenet_v1 import MobileNet2D_V1
-from mobilenet_v2 import MobileNet2D_V2
-from mobilenet_v3 import MobileNet2D_V3
-from mobilenet_v4 import MobileNet2D_V4
-from mobilenet_v5 import MobileNet2D_V5
+import os
+import sys
+# sys.path.append(os.getcwd())
+from models import *
+from models.densenet_og import DenseNet2D
+from models.mobilenet_v1 import MobileNet2D_V1
+from models.mobilenet_v2 import MobileNet2D_V2
+from models.mobilenet_v3 import MobileNet2D_V3
+from models.mobilenet_v4 import MobileNet2D_V4
+from models.mobilenet_v5 import MobileNet2D_V5
 
 model_dict = {}
 

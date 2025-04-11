@@ -211,7 +211,7 @@ class IrisDataset(Dataset):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    ds = IrisDataset("../../../../../../../storage/ice1/shared/bmed6780/mip_group_4/'openEDS Dataset'/openEDS/openEDS/",split='test',transform=transform)
+    ds = IrisDataset("../../../../../../storage/ice1/shared/bmed6780/mip_group_4/'openEDS Dataset'/openEDS/openEDS/",split='test',transform=transform)
 #    for i in range(1000):
     img, label, idx,x,y= ds[0]
     plt.subplot(121)
