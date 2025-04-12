@@ -89,7 +89,7 @@ if __name__ == '__main__':
     
     model = model_dict[args.model]
     model  = model.to(device)
-    torch.save(model.state_dict(), '{}/models/dense_net{}.pkl'.format(LOGDIR,'_0'))
+    torch.save(model.state_dict(), '{}/models/{}{}.pkl'.format(LOGDIR,args.expname,'_0'))
     model.train()
     nparams = get_nparams(model)
     
@@ -174,7 +174,7 @@ if __name__ == '__main__':
             
         ##save the model every epoch
         if epoch %1 == 0:
-            torch.save(model.state_dict(), '{}/models/dense_net{}.pkl'.format(LOGDIR,epoch))
+            torch.save(model.state_dict(), '{}/models/{}{}.pkl'.format(LOGDIR, args.expname, epoch))
 
         ##visualize the ouput every 5 epoch
         if epoch %5 ==0:

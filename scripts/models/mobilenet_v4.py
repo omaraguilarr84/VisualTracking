@@ -151,6 +151,7 @@ class MobileNet2D_V4(nn.Module):
         self.down_block4 = InvertedResidualBlock(in_channels=channel_size,
                                                  out_channels=channel_size,
                                                  expansion_ratio=6, stride=2)
+
         self.down_block5 = DenseNet2D_down_block(input_channels=channel_size,
                                                   output_channels=channel_size,
                                                   down_size=(2,2), dropout=dropout, prob=prob)

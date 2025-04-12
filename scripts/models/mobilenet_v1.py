@@ -131,7 +131,7 @@ class MobileNet2D_V1(nn.Module):
         # Setting stride=2 here reduces the spatial resolution like the original down block.
         self.down_block2 = InvertedResidualBlock(in_channels=channel_size,
                                                  out_channels=channel_size,
-                                                 expansion_ratio=9, stride=2) 
+                                                 expansion_ratio=6, stride=2) 
                                                 # default expantion ratio = 6
         # Continue with the original down blocks for further processing
         self.down_block3 = DenseNet2D_down_block(input_channels=channel_size,
