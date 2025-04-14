@@ -154,7 +154,7 @@ def compute_mean_iou(flat_pred, flat_label,info=False):
     recall = np.zeros(num_unique_labels)
     f1 = np.zeros(num_unique_labels)
 
-    for index, val in enumerate(unique_labels):
+    for index, val in tqdm(enumerate(unique_labels), total=len(unique_labels), desc="Calculating Metrics"):
         pred_i = flat_pred == val
         label_i = flat_label == val
         
