@@ -21,6 +21,7 @@ import os
 
 from sklearn.metrics import precision_score , recall_score,f1_score
 from scipy.ndimage import distance_transform_edt as distance
+from tqdm import tqdm
 #%%
 class FocalLoss2d(nn.Module):
     def __init__(self, weight=None,gamma=2):
@@ -114,7 +115,7 @@ def mIoU(predictions, targets,info=False):  ###Mean per class accuracy
     unique_labels = np.unique(targets)
     num_unique_labels = len(unique_labels)
     ious = []
-    for index in range(num_unique_labels):
+    for index in tqdm(range(num_unique_labels), desc="Calculating Metrics: "):
         pred_i = predictions == index
         label_i = targets == index
         intersection = np.logical_and(label_i, pred_i)

@@ -17,6 +17,9 @@ import torch
 import math
 import torch.nn as nn
 import torch.nn.functional as F
+from opt import parse_args
+
+args = parse_args()
 
 # --- Inverted Residual Block Definition ---
 class InvertedResidualBlock(nn.Module):
@@ -130,12 +133,12 @@ class MobileNet2D_V4(nn.Module):
 
         # replaced block1 with Inverted Residual Block
         self.down_block1 = InvertedResidualBlock(in_channels=in_channels, 
-                                                 out_channels=channel_size, expansion_ratio=6, stride=1,)
+                                                 out_channels=channel_size, expansion_ratio=args.er, stride=1,)
         # Instead of the usual dense block, we now use an Inverted Residual Block which does downsampling.
         # Setting stride=2 here reduces the spatial resolution like the original down block.
         self.down_block2 = InvertedResidualBlock(in_channels=channel_size,
                                                  out_channels=channel_size,
-                                                 expansion_ratio=6, stride=2)
+                                                 expansion_ratio=args.er, stride=2)
         # Continue with the original down blocks for further processing
         # self.down_block3 = DenseNet2D_down_block(input_channels=channel_size,
         #                                           output_channels=channel_size,
@@ -144,13 +147,13 @@ class MobileNet2D_V4(nn.Module):
         # using another inverted residual block for down block 3
         self.down_block3 = InvertedResidualBlock(in_channels=channel_size,
                                                  out_channels=channel_size,
-                                                 expansion_ratio=6, stride=2)
+                                                 expansion_ratio=args.er, stride=2)
         # self.down_block4 = DenseNet2D_down_block(input_channels=channel_size,
         #                                           output_channels=channel_size,
         #                                           down_size=(2,2), dropout=dropout, prob=prob)
         self.down_block4 = InvertedResidualBlock(in_channels=channel_size,
                                                  out_channels=channel_size,
-                                                 expansion_ratio=6, stride=2)
+                                                 expansion_ratio=args.er, stride=2)
 
         self.down_block5 = DenseNet2D_down_block(input_channels=channel_size,
                                                   output_channels=channel_size,

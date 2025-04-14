@@ -89,7 +89,7 @@ if __name__ == '__main__':
     
     model = model_dict[args.model]
     model  = model.to(device)
-    torch.save(model.state_dict(), '{}/models/{}{}.pkl'.format(LOGDIR,args.expname,'_0'))
+    # torch.save(model.state_dict(), '{}/models/{}{}.pkl'.format(LOGDIR,args.expname,'_0'))
     model.train()
     nparams = get_nparams(model)
     
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         alpha[125:]=1
     ious = []        
     for epoch in range(args.epochs):
-        for i, batchdata in enumerate(trainloader):
+        for i, batchdata in tqdm(enumerate(trainloader)):
 #            print (len(batchdata))
             img,labels,index,spatialWeights,maxDist= batchdata
             data = img.to(device)
