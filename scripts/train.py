@@ -14,12 +14,14 @@ import sys
 from models import *
 from models.models import model_dict
 from torch.utils.data import DataLoader 
+import torch.nn.functional as F
 from dataset import IrisDataset
 import torch
 from utils import mIoU, CrossEntropyLoss2d,total_metric,get_nparams,Logger,GeneralizedDiceLoss,SurfaceLoss
 import numpy as np
 from dataset import transform
 from opt import parse_args
+from custom_collate import custom_collate_fn
 # import os
 from utils import get_predictions
 from tqdm import tqdm
@@ -107,6 +109,7 @@ if __name__ == '__main__':
     criterion = CrossEntropyLoss2d()
     criterion_DICE = GeneralizedDiceLoss(softmax=True, reduction=True)
     criterion_SL = SurfaceLoss()
+
     
     Path2file = args.dataset
     train = IrisDataset(filepath = Path2file,split='train',
@@ -116,16 +119,25 @@ if __name__ == '__main__':
                             transform = transform, **kwargs)
     
     trainloader = DataLoader(train, batch_size = args.bs,
-                             shuffle=True, num_workers = args.workers)
+                             shuffle=True, num_workers=args.workers,
+                            #  collate_fn=custom_collate_fn,
+                             )
     
     validloader = DataLoader(valid, batch_size = args.bs,
-                             shuffle= False, num_workers = args.workers)
+                             shuffle= False, 
+                             num_workers=args.workers,
+                            #  collate_fn=custom_collate_fn
+                             )
  
     test = IrisDataset(filepath = Path2file , split='test',
                             transform = transform, **kwargs)
     
     testloader = DataLoader(test, batch_size = args.bs,
-                             shuffle=False, num_workers = args.workers)
+                             shuffle=False, 
+                             num_workers=args.workers,
+                            #  collate_fn=custom_collate_fn
+                             )
+
 
 
 #    alpha = 1 - np.arange(1,args.epochs)/args.epoch
@@ -135,12 +147,15 @@ if __name__ == '__main__':
     if args.epochs>125:
         alpha[125:]=1
     ious = []        
-    for epoch in range(args.epochs):
+    for epoch in tqdm(range(args.epochs), total=len(range(args.epochs)), desc="Epoch"):
         for i, batchdata in tqdm(enumerate(trainloader)):
 #            print (len(batchdata))
             img,labels,index,spatialWeights,maxDist= batchdata
             data = img.to(device)
-            target = labels.to(device).long()  
+            target = labels.to(device).long()
+            # target = labels.float()
+            # target = F.interpolate(target.unsqueeze(1).float(), size=(256, 256), mode='nearest').squeeze(1).to(device).long()
+
             optimizer.zero_grad()            
             output = model(data)
             ## loss from cross entropy is weighted sum of pixel wise loss and Canny edge loss *20
@@ -149,8 +164,12 @@ if __name__ == '__main__':
             
             loss=torch.mean(loss).to(torch.float32).to(device)
             loss_dice = criterion_DICE(output,target)
-            loss_sl = torch.mean(criterion_SL(output.to(device),(maxDist).to(device)))
             
+            loss_sl = torch.mean(criterion_SL(output.to(device),(maxDist).to(device)))
+
+            # maxDist_resized = F.interpolate(maxDist.to(device).unsqueeze(1), size=(256, 256), mode='bilinear', align_corners=False).squeeze(1)
+            # loss_sl = torch.mean(criterion_SL(output.to(device), maxDist_resized))
+
             ##total loss is the weighted sum of suface loss and dice loss plus the boundary weighted cross entropy loss
             loss = (1-alpha[epoch])*loss_sl+alpha[epoch]*(loss_dice)+loss 
 #            

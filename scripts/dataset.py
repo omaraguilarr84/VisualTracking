@@ -22,6 +22,7 @@ Train Image Augmentation Procedure Followed
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch.utils.data import Dataset 
 import os
 from PIL import Image
@@ -144,6 +145,7 @@ class IrisDataset(Dataset):
         if self.testrun:
             return 10
         return len(self.list_files)
+    
 
     def __getitem__(self, idx):
         imagepath = osp.join(self.filepath,'images',self.list_files[idx]+'.png')
@@ -164,7 +166,19 @@ class IrisDataset(Dataset):
         labelpath = osp.join(self.filepath,'labels',self.list_files[idx]+'.npy')
         label = np.load(labelpath)    
         label = np.resize(label,(W,H))
-        label = Image.fromarray(label)
+
+        fixed_size = (256, 256)
+        # For the image: use INTER_AREA for good quality downsampling
+        img_resized = cv2.resize(pilimg, fixed_size, interpolation=cv2.INTER_AREA)
+        # For the label: use INTER_NEAREST to preserve class indices
+        label_resized = cv2.resize(label, fixed_size, interpolation=cv2.INTER_NEAREST)
+        
+        # Convert back to PIL images if your subsequent augmentations expect PIL input
+        img = Image.fromarray(img_resized)
+        label = Image.fromarray(label_resized)
+
+
+        # label = Image.fromarray(label)
                
         if self.transform is not None:
             if self.split == 'train':
@@ -178,7 +192,9 @@ class IrisDataset(Dataset):
                     pilimg, label = Translation()(np.array(pilimg),np.array(label))
                 
         img = self.clahe.apply(np.array(np.uint8(pilimg)))    
-        img = Image.fromarray(img)      
+        img = Image.fromarray(img)
+        
+              
             
         if self.transform is not None:
             if self.split == 'train':
@@ -186,18 +202,25 @@ class IrisDataset(Dataset):
             img = self.transform(img)    
 
 
-        if self.split != 'test':
-            ## This is for boundary aware cross entropy calculation
-            spatialWeights = cv2.Canny(np.array(label),0,3)/255
-            spatialWeights=cv2.dilate(spatialWeights,(3,3),iterations = 1)*20
-            
-            ##This is the implementation for the surface loss
-            # Distance map for each class
-            distMap = []
-            for i in range(0, 4):
-                distMap.append(one_hot2dist(np.array(label)==i))
-            distMap = np.stack(distMap, 0)           
-#            spatialWeights=np.float32(distMap) 
+        # if self.split != 'test':
+        ## This is for boundary aware cross entropy calculation
+        spatialWeights = cv2.Canny(np.array(label),0,3)/255
+        spatialWeights=cv2.dilate(spatialWeights,(3,3),iterations = 1)*20
+        
+        ##This is the implementation for the surface loss
+        # Distance map for each class
+        distMap = []
+#             for i in range(0, 4):
+#                 distMap.append(one_hot2dist(np.array(label)==i))
+#             distMap = np.stack(distMap, 0)           
+# #            spatialWeights=np.float32(distMap) 
+        # Assuming 4 classes
+        for i in range(4):
+            # one_hot2dist expects a binary mask (2D) for class i.
+            dist = one_hot2dist(np.array(label) == i)
+            # Since the label is already resized, the distance map will match.
+            distMap.append(dist)
+        distMap = np.stack(distMap, 0)
             
             
         if self.split == 'test':
