@@ -147,8 +147,12 @@ if __name__ == '__main__':
     if args.epochs>125:
         alpha[125:]=1
     ious = []        
+    losses_sl = []
+    losses_CE = []
+    losses_dice = []
+    losses_total = []
     for epoch in tqdm(range(args.epochs), total=len(range(args.epochs)), desc="Epoch"):
-        for i, batchdata in tqdm(enumerate(trainloader)):
+        for i, batchdata in tqdm(enumerate(trainloader), total=len(trainloader),):
 #            print (len(batchdata))
             img,labels,index,spatialWeights,maxDist= batchdata
             data = img.to(device)
@@ -164,14 +168,17 @@ if __name__ == '__main__':
             
             loss=torch.mean(loss).to(torch.float32).to(device)
             loss_dice = criterion_DICE(output,target)
+            losses_dice.append(loss_dice)
             
             loss_sl = torch.mean(criterion_SL(output.to(device),(maxDist).to(device)))
+            losses_sl.append(loss_sl.cpu())
 
             # maxDist_resized = F.interpolate(maxDist.to(device).unsqueeze(1), size=(256, 256), mode='bilinear', align_corners=False).squeeze(1)
             # loss_sl = torch.mean(criterion_SL(output.to(device), maxDist_resized))
 
             ##total loss is the weighted sum of suface loss and dice loss plus the boundary weighted cross entropy loss
-            loss = (1-alpha[epoch])*loss_sl+alpha[epoch]*(loss_dice)+loss 
+            loss = (1-alpha[epoch])*loss_sl+alpha[epoch]*(loss_dice)+loss
+            losses_total.append(loss)
 #            
             predict = get_predictions(output)
             iou = mIoU(predict,labels)
@@ -221,9 +228,48 @@ if __name__ == '__main__':
                         inp = img[j].squeeze() * 0.5 + 0.5
                         img_orig = np.clip(inp,0,1)
                         img_orig = np.array(img_orig)
+                        # img_orig_resized = np.resize(img_orig, (256,256))
                         combine = np.hstack([img_orig,pred_img])
                         plt.imsave('../../../scratch/train/test/epoch/mask/{}.jpg'.format(index[j]),combine)
     
     end = time()
     print(f"Total training time: {(end-start)/60} mins")
+    plot_metrics((losses_sl, losses_CE, losses_dice, losses_total), ious)
 
+def plot_metrics(losses, ious):
+    import matplotlib.pyplot as plt
+    """
+    Losses is a tuple of lists consisting of the:
+        losses_sl,
+        losses_CE,
+        losses_dice,
+        and losses_total
+    
+    ious consists of the IoU at each epoch
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Left subplot: Training losses
+    ax1.plot(len(losses_sl), losses_sl, label='Surface Loss')
+    ax1.plot(len(losses_CE), losses_CE, label='Cross Entropy Loss')
+    ax1.plot(len(losses_dice), losses_dice, label='Dice Loss')
+    ax1.plot(len(losses_total), losses_total, label='Total Loss')
+    ax1.set_title('Training Losses')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.legend()
+    ax1.grid(True)
+
+    # Right subplot: Mean IoU
+    ax2.plot(len(ious), ious, label='Mean IoU')
+    ax2.set_title('Mean IoU over Epochs')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('IoU')
+    ax2.legend()
+    ax2.grid(True)
+
+    fig.tight_layout()
+    # Save the combined figure as one image file
+    fig.savefig('training_metrics.png')
+
+    plt.show()

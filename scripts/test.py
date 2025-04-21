@@ -101,7 +101,8 @@ if __name__ == '__main__':
                 inp = img[j].squeeze() * 0.5 + 0.5
                 img_orig = np.clip(inp,0,1)
                 img_orig = np.array(img_orig)
-                combine = np.hstack([img_orig,pred_img])
+                img_orig_resized = np.resize(img_orig, (256,256))
+                combine = np.hstack([img_orig_resized,pred_img])
                 plt.imsave('{}/{}/mask/{}.jpg'.format(test_save_dir, args.expname, index[j]),combine)
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)

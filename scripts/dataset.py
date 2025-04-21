@@ -167,18 +167,17 @@ class IrisDataset(Dataset):
         label = np.load(labelpath)    
         label = np.resize(label,(W,H))
 
-        fixed_size = (256, 256)
+        # fixed_size = (256, 256)
         # For the image: use INTER_AREA for good quality downsampling
-        img_resized = cv2.resize(pilimg, fixed_size, interpolation=cv2.INTER_AREA)
+        # img_resized = cv2.resize(pilimg, fixed_size, interpolation=cv2.INTER_AREA)
         # For the label: use INTER_NEAREST to preserve class indices
-        label_resized = cv2.resize(label, fixed_size, interpolation=cv2.INTER_NEAREST)
+        # label_resized = cv2.resize(label, fixed_size, interpolation=cv2.INTER_NEAREST)
         
         # Convert back to PIL images if your subsequent augmentations expect PIL input
-        img = Image.fromarray(img_resized)
-        label = Image.fromarray(label_resized)
+        # img = Image.fromarray(img_resized)
+        # label = Image.fromarray(label_resized)
 
-
-        # label = Image.fromarray(label)
+        label = Image.fromarray(label)
                
         if self.transform is not None:
             if self.split == 'train':
@@ -210,17 +209,17 @@ class IrisDataset(Dataset):
         ##This is the implementation for the surface loss
         # Distance map for each class
         distMap = []
-#             for i in range(0, 4):
-#                 distMap.append(one_hot2dist(np.array(label)==i))
-#             distMap = np.stack(distMap, 0)           
+        for i in range(0, 4):
+            distMap.append(one_hot2dist(np.array(label)==i))
+        distMap = np.stack(distMap, 0)           
 # #            spatialWeights=np.float32(distMap) 
         # Assuming 4 classes
-        for i in range(4):
-            # one_hot2dist expects a binary mask (2D) for class i.
-            dist = one_hot2dist(np.array(label) == i)
-            # Since the label is already resized, the distance map will match.
-            distMap.append(dist)
-        distMap = np.stack(distMap, 0)
+        # for i in range(4):
+        #     # one_hot2dist expects a binary mask (2D) for class i.
+        #     dist = one_hot2dist(np.array(label) == i)
+        #     # Since the label is already resized, the distance map will match.
+        #     distMap.append(dist)
+        # distMap = np.stack(distMap, 0)
             
             
         if self.split == 'test':

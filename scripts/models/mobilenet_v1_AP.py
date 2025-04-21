@@ -190,6 +190,7 @@ class MobileNet2D_V1_AP(nn.Module):
                 m.bias.data.zero_()
                 
     def forward(self, x):
+        B, C, H, W = x.shape
         x = self.adaptive_pool(x)
         self.x1 = self.down_block1(x)
         self.x2 = self.down_block2(self.x1)  # Now uses the inverted residual block!
@@ -206,4 +207,8 @@ class MobileNet2D_V1_AP(nn.Module):
             out = self.out_conv1(self.x9)
         # out = self.adaptive_pool(out)
                        
+        out = F.interpolate(out,
+                               size=(H, W),
+                               mode='bilinear',
+                               align_corners=False)
         return out
