@@ -109,8 +109,11 @@ if __name__ == '__main__':
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)
     # miou = compute_mean_iou(all_preds.flatten(), all_labels.flatten(), info=True)
+    end = time()
+    print(f"Total Testing Time before mIoU calculation: {(end-start)/60}")
+    start = time()
     miou, precision, recall, f1 = compute_mean_iou(all_preds.flatten(), all_labels.flatten(), info=True)
     end = time()
-    print(f"Total time taken: {(end-start) / 60} min")
+    print(f"Total calculation time taken: {(end-start) / 60} min")
 
     # os.rename('test',args.save)

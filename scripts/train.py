@@ -21,7 +21,7 @@ from utils import mIoU, CrossEntropyLoss2d,total_metric,get_nparams,Logger,Gener
 import numpy as np
 from dataset import transform
 from opt import parse_args
-from custom_collate import custom_collate_fn
+# from custom_collate import custom_collate_fn
 # import os
 from utils import get_predictions
 from tqdm import tqdm
@@ -303,6 +303,7 @@ if __name__ == '__main__':
     
     end = time()
     print(f"Total training time: {(end-start)/60} mins")
+    logger.write('Total training time:{}'.format((end-start)/60))
     plot_metrics((losses_sl, losses_CE, losses_dice, losses_total), 
                  ious, 
                  name=args.expname)
