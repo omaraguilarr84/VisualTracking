@@ -37,7 +37,8 @@ class CrossEntropyLoss2d(nn.Module):
 
     def __init__(self, weight=None):
         super(CrossEntropyLoss2d,self).__init__()
-        self.loss = nn.NLLLoss(weight)
+        # self.loss = nn.NLLLoss(weight)
+        self.loss = nn.NLLLoss(weight, ignore_index=-1)
 
     def forward(self, outputs, targets):
         return self.loss(F.log_softmax(outputs,dim=1), targets)
@@ -114,13 +115,22 @@ def one_hot2dist(posmask):
 def mIoU(predictions, targets,info=False):  ###Mean per class accuracy
     unique_labels = np.unique(targets)
     num_unique_labels = len(unique_labels)
+    predictions = predictions.cpu().numpy().ravel()
+    targets = targets.cpu().numpy().ravel()
     ious = []
-    for index in tqdm(range(num_unique_labels), desc="Calculating Metrics: "):
+    for index in range(num_unique_labels):
+        if index == -1:
+            # index to ignore due to pad_collate
+            continue
         pred_i = predictions == index
         label_i = targets == index
-        intersection = np.logical_and(label_i, pred_i)
-        union = np.logical_or(label_i, pred_i)
-        iou_score = np.sum(intersection.numpy())/np.sum(union.numpy())
+        intersection = np.logical_and(label_i, pred_i).sum()
+        union = np.logical_or(label_i, pred_i).sum()
+
+        if union == 0:
+            # no pixels of this class in either pred or label → skip
+            continue
+        iou_score = intersection/union
         ious.append(iou_score)
     if info:
         print ("per-class mIOU: ", ious)

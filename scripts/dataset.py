@@ -182,7 +182,7 @@ class IrisDataset(Dataset):
         if self.transform is not None:
             if self.split == 'train':
                 # too problematic to integrate, leading to higher mious than normal
-                
+
                 # if random.random() < 0.2: 
                 #     pilimg = Starburst_augment()(np.array(pilimg))  
                 if random.random() < 0.2: 
@@ -224,11 +224,11 @@ class IrisDataset(Dataset):
         # distMap = np.stack(distMap, 0)
             
             
-        if self.split == 'test':
+        # if self.split == 'test':
             ##since label, spatialWeights and distMap is not needed for test images
             # return img,0,self.list_files[idx],0,0
-            label = MaskToTensor()(label)
-            return img,label,self.list_files[idx],0,0
+            # label = MaskToTensor()(label)
+            # return img,label,self.list_files[idx],0,0
             
         label = MaskToTensor()(label)
         return img, label, self.list_files[idx],spatialWeights,np.float32(distMap) 

@@ -29,6 +29,46 @@ import matplotlib.pyplot as plt
 from time import time
 #%%
 
+def plot_metrics(losses, ious, name):
+    import matplotlib.pyplot as plt
+    """
+    Losses is a tuple of lists consisting of the:
+        losses_sl,
+        losses_CE,
+        losses_dice,
+        and losses_total
+    
+    ious consists of the IoU at each epoch
+    name is a string
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Left subplot: Training losses
+    ax1.plot(len(losses_sl), losses_sl, label='Surface Loss')
+    ax1.plot(len(losses_CE), losses_CE, label='Cross Entropy Loss')
+    ax1.plot(len(losses_dice), losses_dice, label='Dice Loss')
+    ax1.plot(len(losses_total), losses_total, label='Total Loss')
+    ax1.set_title('Training Losses')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.legend()
+    ax1.grid(True)
+
+    # Right subplot: Mean IoU
+    ax2.plot(len(ious), ious, label='Mean IoU')
+    ax2.set_title('Mean IoU over Epochs')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('IoU')
+    ax2.legend()
+    ax2.grid(True)
+
+    fig.tight_layout()
+    # Save the combined figure as one image file
+    fig.savefig(f'{LOGDIR}/{name}_training_metrics.png')
+
+    plt.show()
+
+
 def lossandaccuracy(loader,model,factor):
     epoch_loss = []
     ious = []    
@@ -58,6 +98,35 @@ def lossandaccuracy(loader,model,factor):
             iou = mIoU(predict,labels)
             ious.append(iou)
     return np.average(epoch_loss),np.average(ious)
+
+def pad_collate(batch):
+    imgs, labs, idxs, spats, dists = zip(*batch)
+
+    # find the max spatial size in this batch
+    maxH = max(x.shape[-2] for x in imgs)
+    maxW = max(x.shape[-1] for x in imgs)
+
+    def pad_tensor(t, pad_value=0):
+        # ensure t is [C,H,W]
+        if t.dim() == 2:      # a label or single‐channel mask
+            t = t.unsqueeze(0)
+        C, H, W = t.shape
+        out = t.new_full((C, maxH, maxW), pad_value)
+        out[:, :H, :W] = t
+        return out
+
+    # stack each field
+    img_batch  = torch.stack([pad_tensor(img)             for img  in imgs], dim=0)
+    lab_batch  = torch.stack([pad_tensor(lab, pad_value=-1) for lab  in labs], dim=0)
+    spat_batch = torch.stack([pad_tensor(torch.from_numpy(sp).unsqueeze(0))
+                                for sp   in spats], dim=0)
+    dist_batch = torch.stack([pad_tensor(torch.from_numpy(dm)) 
+                                for dm   in dists], dim=0)
+
+    # optionally remove that extra channel dim on labels if you want [B,H,W]
+    lab_batch = lab_batch.squeeze(1)
+
+    return img_batch, lab_batch, idxs, spat_batch, dist_batch
 
 #%%
 if __name__ == '__main__':
@@ -120,13 +189,13 @@ if __name__ == '__main__':
     
     trainloader = DataLoader(train, batch_size = args.bs,
                              shuffle=True, num_workers=args.workers,
-                            #  collate_fn=custom_collate_fn,
+                             collate_fn=pad_collate,
                              )
     
     validloader = DataLoader(valid, batch_size = args.bs,
                              shuffle= False, 
                              num_workers=args.workers,
-                            #  collate_fn=custom_collate_fn
+                             collate_fn=pad_collate
                              )
  
     test = IrisDataset(filepath = Path2file , split='test',
@@ -135,7 +204,7 @@ if __name__ == '__main__':
     testloader = DataLoader(test, batch_size = args.bs,
                              shuffle=False, 
                              num_workers=args.workers,
-                            #  collate_fn=custom_collate_fn
+                             collate_fn=pad_collate
                              )
 
 
@@ -238,41 +307,3 @@ if __name__ == '__main__':
                  ious, 
                  name=args.expname)
 
-def plot_metrics(losses, ious, name):
-    import matplotlib.pyplot as plt
-    """
-    Losses is a tuple of lists consisting of the:
-        losses_sl,
-        losses_CE,
-        losses_dice,
-        and losses_total
-    
-    ious consists of the IoU at each epoch
-    name is a string
-    """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-
-    # Left subplot: Training losses
-    ax1.plot(len(losses_sl), losses_sl, label='Surface Loss')
-    ax1.plot(len(losses_CE), losses_CE, label='Cross Entropy Loss')
-    ax1.plot(len(losses_dice), losses_dice, label='Dice Loss')
-    ax1.plot(len(losses_total), losses_total, label='Total Loss')
-    ax1.set_title('Training Losses')
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Loss')
-    ax1.legend()
-    ax1.grid(True)
-
-    # Right subplot: Mean IoU
-    ax2.plot(len(ious), ious, label='Mean IoU')
-    ax2.set_title('Mean IoU over Epochs')
-    ax2.set_xlabel('Epoch')
-    ax2.set_ylabel('IoU')
-    ax2.legend()
-    ax2.grid(True)
-
-    fig.tight_layout()
-    # Save the combined figure as one image file
-    fig.savefig(f'{LOGDIR}/{name}_training_metrics.png')
-
-    plt.show()
