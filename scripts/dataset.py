@@ -181,6 +181,8 @@ class IrisDataset(Dataset):
                
         if self.transform is not None:
             if self.split == 'train':
+                # too problematic to integrate, leading to higher mious than normal
+                
                 # if random.random() < 0.2: 
                 #     pilimg = Starburst_augment()(np.array(pilimg))  
                 if random.random() < 0.2: 
