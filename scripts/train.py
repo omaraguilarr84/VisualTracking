@@ -29,43 +29,53 @@ import matplotlib.pyplot as plt
 from time import time
 #%%
 
-def plot_metrics(losses, ious, name):
+def plot_metrics(losses, ious, name, save_dir):
     import matplotlib.pyplot as plt
-    """
-    Losses is a tuple of lists consisting of the:
-        losses_sl,
-        losses_CE,
-        losses_dice,
-        and losses_total
-    
-    ious consists of the IoU at each epoch
-    name is a string
-    """
+
+    # Unpack
+    losses_sl, losses_CE, losses_dice, losses_total = losses
+
+    # Convert each list of tensors to a list of floats
+    def to_float_list(ts):
+        out = []
+        for t in ts:
+            if hasattr(t, 'detach'):
+                t = t.detach()
+            out.append(float(t.cpu().numpy() if isinstance(t, np.ndarray) else t))
+        return out
+
+    sl = to_float_list(losses_sl)
+    ce = to_float_list(losses_CE)
+    di = to_float_list(losses_dice)
+    tot= to_float_list(losses_total)
+
+    # Create epoch index arrays
+    epochs_losses = range(1, len(sl) + 1)
+    epochs_iou    = range(1, len(ious) + 1)
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-    # Left subplot: Training losses
-    ax1.plot(len(losses_sl), losses_sl, label='Surface Loss')
-    ax1.plot(len(losses_CE), losses_CE, label='Cross Entropy Loss')
-    ax1.plot(len(losses_dice), losses_dice, label='Dice Loss')
-    ax1.plot(len(losses_total), losses_total, label='Total Loss')
+    # Left: all losses on the same plot
+    ax1.plot(epochs_losses, sl,  label='Surface Loss')
+    ax1.plot(epochs_losses, ce,  label='Cross Entropy Loss')
+    ax1.plot(epochs_losses, di,  label='Dice Loss')
+    ax1.plot(epochs_losses, tot, label='Total Loss')
     ax1.set_title('Training Losses')
-    ax1.set_xlabel('Epoch')
+    ax1.set_xlabel('Iteration')
     ax1.set_ylabel('Loss')
     ax1.legend()
     ax1.grid(True)
 
-    # Right subplot: Mean IoU
-    ax2.plot(len(ious), ious, label='Mean IoU')
-    ax2.set_title('Mean IoU over Epochs')
-    ax2.set_xlabel('Epoch')
+    # Right: IoU over epochs
+    ax2.plot(epochs_iou, ious, label='Mean IoU')
+    ax2.set_title('Mean IoU')
+    ax2.set_xlabel('Iteration')
     ax2.set_ylabel('IoU')
     ax2.legend()
     ax2.grid(True)
 
     fig.tight_layout()
-    # Save the combined figure as one image file
-    fig.savefig(f'{LOGDIR}/{name}_training_metrics.png')
-
+    plt.savefig(f'{save_dir}/{name}_training_metrics.png')
     plt.show()
 
 
@@ -306,5 +316,6 @@ if __name__ == '__main__':
     logger.write('Total training time:{}'.format((end-start)/60))
     plot_metrics((losses_sl, losses_CE, losses_dice, losses_total), 
                  ious, 
-                 name=args.expname)
+                 name=args.expname,
+                 save_dir=LOGDIR)
 
