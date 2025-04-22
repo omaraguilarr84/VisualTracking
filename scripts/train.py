@@ -232,6 +232,11 @@ if __name__ == '__main__':
     losses_total = []
     for epoch in tqdm(range(args.epochs), total=len(range(args.epochs)), desc="Epoch"):
         for i, batchdata in tqdm(enumerate(trainloader), total=len(trainloader),):
+            temp_ious = []
+            temp_sl = []
+            temp_CE = []
+            temp_dice = []
+            temp_total = []
 #            print (len(batchdata))
             img,labels,index,spatialWeights,maxDist= batchdata
             data = img.to(device)
@@ -243,32 +248,39 @@ if __name__ == '__main__':
             output = model(data)
             ## loss from cross entropy is weighted sum of pixel wise loss and Canny edge loss *20
             CE_loss = criterion(output,target)
+            temp_CE.append(CE_loss)
             loss = CE_loss*(torch.from_numpy(np.ones(spatialWeights.shape)).to(torch.float32).to(device)+(spatialWeights).to(torch.float32).to(device))
             
             loss=torch.mean(loss).to(torch.float32).to(device)
             loss_dice = criterion_DICE(output,target)
-            losses_dice.append(loss_dice)
+            temp_dice.append(loss_dice)
             
             loss_sl = torch.mean(criterion_SL(output.to(device),(maxDist).to(device)))
-            losses_sl.append(loss_sl.cpu())
+            temp_sl.append(loss_sl.cpu())
 
             # maxDist_resized = F.interpolate(maxDist.to(device).unsqueeze(1), size=(256, 256), mode='bilinear', align_corners=False).squeeze(1)
             # loss_sl = torch.mean(criterion_SL(output.to(device), maxDist_resized))
 
             ##total loss is the weighted sum of suface loss and dice loss plus the boundary weighted cross entropy loss
             loss = (1-alpha[epoch])*loss_sl+alpha[epoch]*(loss_dice)+loss
-            losses_total.append(loss)
+            temp_total.append(loss)
 #            
             predict = get_predictions(output)
             iou = mIoU(predict,labels)
-            ious.append(iou)
+            temp_ious.append(iou)
     
             if i%10 == 0:
                 logger.write('Epoch:{} [{}/{}], Loss: {:.3f}'.format(epoch,i,len(trainloader),loss.item()))
     
             loss.backward()
             optimizer.step()
-            
+        
+        ious.append(np.mean(temp_ious))
+        losses_sl.append(np.mean(temp_sl))
+        losses_CE.append(np.mean(temp_CE))
+        losses_dice.append(np.mean(temp_dice))
+        losses_total.append(np.mean(temp_total))
+
         logger.write('Epoch:{}, Train mIoU: {}'.format(epoch,np.average(ious)))
         lossvalid , miou = lossandaccuracy(validloader,model,alpha[epoch])
         totalperf = total_metric(nparams,miou)
@@ -276,7 +288,7 @@ if __name__ == '__main__':
         logger.write(f.format(epoch,lossvalid, miou,nparams,totalperf))
         
         scheduler.step(lossvalid)
-            
+        
         ##save the model every epoch
         if epoch %1 == 0:
             torch.save(model.state_dict(), '{}/models/{}{}.pkl'.format(LOGDIR, args.expname, epoch))
