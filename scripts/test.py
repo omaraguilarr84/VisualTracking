@@ -87,6 +87,8 @@ if __name__ == '__main__':
             predict = get_predictions(output)
             all_preds.append(predict)
             all_labels.append(labels)
+            
+            plt.imsave('{}/{}/imgs/{}.jpg'.format(test_save_dir, args.expname, index), img)
 
             for j in range (len(index)):       
                 np.save('{}/{}/labels/{}.npy'.format(test_save_dir, args.expname, index[j]),predict[j].cpu().numpy())
@@ -95,14 +97,14 @@ if __name__ == '__main__':
                 except:
                     pass
                 
-                plt.imsave('{}/{}/imgs/{}.jpg'.format(test_save_dir, args.expname, index[j]), img)
+                # plt.imsave('{}/{}/imgs/{}.jpg'.format(test_save_dir, args.expname, index[j]), img)
 
                 pred_img = predict[j].cpu().numpy()/3.0
                 inp = img[j].squeeze() * 0.5 + 0.5
                 img_orig = np.clip(inp,0,1)
                 img_orig = np.array(img_orig)
-                img_orig_resized = np.resize(img_orig, (256,256))
-                combine = np.hstack([img_orig_resized,pred_img])
+                # img_orig_resized = np.resize(img_orig, (256,256))
+                combine = np.hstack([img_orig,pred_img])
                 plt.imsave('{}/{}/mask/{}.jpg'.format(test_save_dir, args.expname, index[j]),combine)
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)

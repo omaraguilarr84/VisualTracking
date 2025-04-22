@@ -208,9 +208,9 @@ if __name__ == '__main__':
             # os.makedirs('test/epoch/output/',exist_ok=True)
             # os.makedirs('test/epoch/mask/',exist_ok=True)
 
-            os.makedirs('../../../scratch/train/test/epoch/labels/', exist_ok=True)
-            os.makedirs('../../../scratch/train/test/epoch/output/', exist_ok=True)
-            os.makedirs('../../../scratch/train/test/epoch/mask/', exist_ok=True)
+            os.makedirs(f'{LOGDIR}/test/epoch/labels/', exist_ok=True)
+            os.makedirs(f'{LOGDIR}/test/epoch/output/', exist_ok=True)
+            os.makedirs(f'{LOGDIR}/test/epoch/mask/', exist_ok=True)
             
             with torch.no_grad():
                 for i, batchdata in tqdm(enumerate(testloader),total=len(testloader)):
@@ -219,9 +219,9 @@ if __name__ == '__main__':
                     output = model(data)            
                     predict = get_predictions(output)
                     for j in range (len(index)):       
-                        np.save('../../../scratch/train/test/epoch/labels/{}.npy'.format(index[j]),predict[j].cpu().numpy())
+                        np.save('{}/test/epoch/labels/{}.npy'.format(LOGDIR, index[j]),predict[j].cpu().numpy())
                         try:
-                            plt.imsave('../../../scratch/train/test/epoch/output/{}.jpg'.format(index[j]),255*labels[j].cpu().numpy())
+                            plt.imsave('{}/test/epoch/output/{}.jpg'.format(LOGDIR, index[j]),255*labels[j].cpu().numpy())
                         except:
                             pass
                         pred_img = predict[j].cpu().numpy()/3.0
@@ -230,13 +230,15 @@ if __name__ == '__main__':
                         img_orig = np.array(img_orig)
                         # img_orig_resized = np.resize(img_orig, (256,256))
                         combine = np.hstack([img_orig,pred_img])
-                        plt.imsave('../../../scratch/train/test/epoch/mask/{}.jpg'.format(index[j]),combine)
+                        plt.imsave('{}/test/epoch/mask/{}.jpg'.format(LOGDIR, index[j]),combine)
     
     end = time()
     print(f"Total training time: {(end-start)/60} mins")
-    plot_metrics((losses_sl, losses_CE, losses_dice, losses_total), ious)
+    plot_metrics((losses_sl, losses_CE, losses_dice, losses_total), 
+                 ious, 
+                 name=args.expname)
 
-def plot_metrics(losses, ious):
+def plot_metrics(losses, ious, name):
     import matplotlib.pyplot as plt
     """
     Losses is a tuple of lists consisting of the:
@@ -246,6 +248,7 @@ def plot_metrics(losses, ious):
         and losses_total
     
     ious consists of the IoU at each epoch
+    name is a string
     """
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -270,6 +273,6 @@ def plot_metrics(losses, ious):
 
     fig.tight_layout()
     # Save the combined figure as one image file
-    fig.savefig('training_metrics.png')
+    fig.savefig(f'{LOGDIR}/{name}_training_metrics.png')
 
     plt.show()
