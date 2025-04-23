@@ -15,6 +15,12 @@ from models.mobilenet_v3 import MobileNet2D_V3
 from models.mobilenet_v4 import MobileNet2D_V4
 from models.mobilenet_v5 import MobileNet2D_V5
 from models.densenet_og import DenseNet2D
+from models.densenet_og_AP import DenseNet2D_AP
+from models.mobilenet_v1_AP import MobileNet2D_V1_AP
+from models.mobilenet_v2_AP import MobileNet2D_V2_AP
+from models.mobilenet_v3_AP import MobileNet2D_V3_AP    
+from models.mobilenet_v4_AP import MobileNet2D_V4_AP
+from models.mobilenet_v5_AP import MobileNet2D_V5_AP
 
 def load_image(image_path):
     # Load and preprocess the image
@@ -63,11 +69,13 @@ def get_available_er_values(weights_dir, model_name):
             er_values.append(er_value)
     return sorted(er_values)
 
+
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Test inference speed of a specific model')
     parser.add_argument('--model', type=str, required=True, 
-                      choices=['MOBILE_V1', 'MOBILE_V2', 'MOBILE_V3', 'MOBILE_V4', 'MOBILE_V5', 'DenseNet'],
+                      choices=['MOBILE_V1', 'MOBILE_V2', 'MOBILE_V3', 'MOBILE_V4', 'MOBILE_V5', 'DenseNet', 'MOBILE_V1_AP', 'MOBILE_V2_AP', 'MOBILE_V3_AP', 'MOBILE_V4_AP', 'MOBILE_V5_AP', 'DenseNet_AP'],
                       help='Model to test')
     parser.add_argument('--er', type=int, help='Expansion ratio (only for MOBILE_V1)')
     args_test = parser.parse_args()
@@ -86,7 +94,7 @@ def main():
     input_image = load_image(image_path).to(device)
     
     # Model configurations with weight file patterns
-    weights_dir = r'C:\Users\hayde\OneDrive\Documents\Y5S2\Medical_Image_Processing\demo\time_testing\weights'
+    weights_dir = r'C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\time_testing\weights'
     base_models_config = {
         'MOBILE_V1': {
             'model_class': MobileNet2D_V1,
@@ -111,6 +119,30 @@ def main():
         'DenseNet': {
             'model_class': DenseNet2D,
             'weight_pattern': lambda er: os.path.join(weights_dir, 'best_model.pkl')
+        },
+        'DenseNet_AP': {
+            'model_class': DenseNet2D_AP,
+            'weight_pattern': lambda er: os.path.join(weights_dir, 'TRAIN_OG_AP_ROI9.pkl')
+        },
+        'MOBILE_V1_AP': {
+            'model_class': MobileNet2D_V1_AP,
+            'weight_pattern': lambda er: os.path.join(weights_dir, 'TRAIN_MOBILE_V1_AP_ROI9.pkl')
+        },
+        'MOBILE_V2_AP': {
+            'model_class': MobileNet2D_V2_AP,
+            'weight_pattern': lambda er: os.path.join(weights_dir, 'TRAIN_MOBILENET_V2_AP_ROI9.pkl')
+        },
+        'MOBILE_V3_AP': {
+            'model_class': MobileNet2D_V3_AP,
+            'weight_pattern': lambda er: os.path.join(weights_dir, 'TRAIN_MOBILENET_V3_AP_ROI9.pkl')
+        },
+        'MOBILE_V4_AP': {
+            'model_class': MobileNet2D_V4_AP,
+            'weight_pattern': lambda er: os.path.join(weights_dir, 'TRAIN_MOBILENET_V4_AP_ROI9.pkl')
+        },
+        'MOBILE_V5_AP': {
+            'model_class': MobileNet2D_V5_AP,
+            'weight_pattern': lambda er: os.path.join(weights_dir, 'TRAIN_MOBILENET_V5_AP_ROI9.pkl')
         }
     }
     
@@ -138,6 +170,7 @@ def main():
     print(f"\nTesting {args_test.model}" + (f" with ER={args_test.er}" if args_test.er is not None else ""))
     avg_time, std_time = test_model_speed(model, input_image)
     
+
     # Print results
     print("\n=== Results ===")
     print("Model Configuration | Inference Time (ms) | Expansion Ratio | Weights")

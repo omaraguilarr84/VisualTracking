@@ -11,6 +11,12 @@ from mobilenet_v2 import MobileNet2D_V2
 from mobilenet_v3 import MobileNet2D_V3
 from mobilenet_v4 import MobileNet2D_V4
 from mobilenet_v5 import MobileNet2D_V5
+from mobilenet_v1_AP import MobileNet2D_V1_AP
+from mobilenet_v2_AP import MobileNet2D_V2_AP
+from mobilenet_v3_AP import MobileNet2D_V3_AP
+from mobilenet_v4_AP import MobileNet2D_V4_AP
+from mobilenet_v5_AP import MobileNet2D_V5_AP
+from densenet_og_AP import DenseNet2D_AP
 from PIL import Image
 from torchvision import transforms
 import utils
@@ -37,7 +43,20 @@ def init_model(model_path, device, modeltype=0):
             model = MobileNet2D_V5(dropout=True, prob=0.2)
         elif modeltype == 5:
             model = DenseNet2D(dropout=True, prob=0.2)
+        elif modeltype == 6:
+            model = MobileNet2D_V1_AP(dropout=True, prob=0.2)
+        elif modeltype == 7:
+            model = MobileNet2D_V2_AP(dropout=True, prob=0.2)
+        elif modeltype == 8:
+            model = MobileNet2D_V3_AP(dropout=True, prob=0.2)
+        elif modeltype == 9:
+            model = MobileNet2D_V4_AP(dropout=True, prob=0.2)
+        elif modeltype == 10:
+            model = MobileNet2D_V5_AP(dropout=True, prob=0.2)
+        elif modeltype == 11:
+            model = DenseNet2D_AP(dropout=True, prob=0.2)
         model = model.to(device)
+    
         
         # Load the state dictionary
         if not os.path.exists(model_path):
@@ -105,6 +124,13 @@ def main():
     model3_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V3.pkl"
     model4_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V4.pkl"
     model5_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V5.pkl"
+    model6_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V1_AP_ROI9.pkl"
+    model7_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V2_AP_ROI9.pkl"
+    model8_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V3_AP_ROI9.pkl"
+    model9_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V4_AP_ROI9.pkl"
+    model10_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V5_AP_ROI9.pkl"
+    dense_net_ap_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_OG_AP_ROI9.pkl"
+
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = init_model(model_path, device, 0)
@@ -113,6 +139,12 @@ def main():
     model4 = init_model(model4_path, device, 3)
     model5 = init_model(model5_path, device, 4)
     dense_net_model = init_model(dense_net_path, device, 5)
+    model6 = init_model(model6_path, device, 6)
+    model7 = init_model(model7_path, device, 7)
+    model8 = init_model(model8_path, device, 8)
+    model9 = init_model(model9_path, device, 9)
+    model10 = init_model(model10_path, device, 10)
+    dense_net_ap_model = init_model(dense_net_ap_path, device, 11)
     # load pictures
     ds_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\real_time_ds"
     imageFiles = glob(os.path.join(ds_path, '*.jpg'))
@@ -133,6 +165,12 @@ def main():
     all_iou_scores3 = np.zeros((len(dataset), 3))
     all_iou_scores4 = np.zeros((len(dataset), 3))
     all_iou_scores5 = np.zeros((len(dataset), 3))
+    all_iou_scores6 = np.zeros((len(dataset), 3))
+    all_iou_scores7 = np.zeros((len(dataset), 3))
+    all_iou_scores8 = np.zeros((len(dataset), 3))
+    all_iou_scores9 = np.zeros((len(dataset), 3))
+    all_iou_scores10 = np.zeros((len(dataset), 3))
+    all_iou_scores_dense_ap = np.zeros((len(dataset), 3))
     i = 0
     for image_path, json_path in dataset:
         # Load image
@@ -193,6 +231,49 @@ def main():
         all_iou_scores_dense[i, 0] = pupil_iou_dense
         all_iou_scores_dense[i, 1] = iris_iou_dense
         all_iou_scores_dense[i, 2] = sclera_iou_dense
+        #MobileNetV1_AP
+        pupil_iou6 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
+        iris_iou6 = calculate_iou(pred_masks['iris'], iris_mask_gt)
+        sclera_iou6 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        all_iou_scores6[i, 0] = pupil_iou6
+        all_iou_scores6[i, 1] = iris_iou6
+        all_iou_scores6[i, 2] = sclera_iou6
+        #MobileNetV2_AP
+        pupil_iou7 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
+        iris_iou7 = calculate_iou(pred_masks['iris'], iris_mask_gt)
+        sclera_iou7 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        all_iou_scores7[i, 0] = pupil_iou7
+        all_iou_scores7[i, 1] = iris_iou7
+        all_iou_scores7[i, 2] = sclera_iou7
+        #MobileNetV3_AP
+        pupil_iou8 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
+        iris_iou8 = calculate_iou(pred_masks['iris'], iris_mask_gt)
+        sclera_iou8 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        all_iou_scores8[i, 0] = pupil_iou8
+        all_iou_scores8[i, 1] = iris_iou8
+        all_iou_scores8[i, 2] = sclera_iou8
+        #MobileNetV4_AP
+        pupil_iou9 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
+        iris_iou9 = calculate_iou(pred_masks['iris'], iris_mask_gt)
+        sclera_iou9 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        all_iou_scores9[i, 0] = pupil_iou9
+        all_iou_scores9[i, 1] = iris_iou9
+        all_iou_scores9[i, 2] = sclera_iou9
+        #MobileNetV5_AP
+        pupil_iou10 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
+        iris_iou10 = calculate_iou(pred_masks['iris'], iris_mask_gt)
+        sclera_iou10 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        all_iou_scores10[i, 0] = pupil_iou10
+        all_iou_scores10[i, 1] = iris_iou10
+        all_iou_scores10[i, 2] = sclera_iou10
+        #DenseNet_AP
+        pupil_iou_dense_ap = calculate_iou(pred_masks_dense['pupil'], pupil_mask_gt)
+        iris_iou_dense_ap = calculate_iou(pred_masks_dense['iris'], iris_mask_gt)
+        sclera_iou_dense_ap = calculate_iou(pred_masks_dense['sclera'], sclera_mask_gt)
+        all_iou_scores_dense_ap[i, 0] = pupil_iou_dense_ap
+        all_iou_scores_dense_ap[i, 1] = iris_iou_dense_ap
+        all_iou_scores_dense_ap[i, 2] = sclera_iou_dense_ap
+        
         print(f"DenseNet - Image: {os.path.basename(image_path)}, Pupil IoU: {pupil_iou_dense:.4f}, Iris IoU: {iris_iou_dense:.4f}, Sclera IoU: {sclera_iou_dense:.4f}")
         i += 1
     print(f"Mean IoU: Pupil: {np.mean(all_iou_scores[:, 0]):.4f}, Iris: {np.mean(all_iou_scores[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores[:, 2]):.4f}")
