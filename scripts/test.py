@@ -91,7 +91,9 @@ if __name__ == '__main__':
     test_set = IrisDataset(filepath = args.dataset, split = 'test',transform = transform)
     
     testloader = DataLoader(test_set, batch_size = args.bs,
-                             shuffle=False, num_workers=2)
+                             shuffle=False,
+                             collate_fn=pad_collate,
+                             num_workers=2)
     counter=0
 
     test_save_dir = args.testsavedir
@@ -105,8 +107,8 @@ if __name__ == '__main__':
     os.makedirs(f'{test_save_dir}/{args.expname}/imgs/', exist_ok=True)
     # original images
 
-    all_preds = []
-    all_labels = []
+    all_preds_flat = []
+    all_labels_flat = []
     
     with torch.no_grad():
         for i, batchdata in tqdm(enumerate(testloader),total=len(testloader)):
@@ -114,8 +116,11 @@ if __name__ == '__main__':
             data = img.to(device)       
             output = model(data)            
             predict = get_predictions(output)
-            all_preds.append(predict)
-            all_labels.append(labels)
+            for p, l in zip(predict, labels):
+                all_preds_flat.extend(p.cpu().ravel())  # <<< CHANGED
+                all_labels_flat.extend(l.cpu().ravel())
+            # all_preds_flat.append(predict)
+            # all_labels_flat.append(labels)
             
             plt.imsave('{}/{}/imgs/{}.jpg'.format(test_save_dir, args.expname, index), img)
 
@@ -135,13 +140,15 @@ if __name__ == '__main__':
                 # img_orig_resized = np.resize(img_orig, (256,256))
                 combine = np.hstack([img_orig,pred_img])
                 plt.imsave('{}/{}/mask/{}.jpg'.format(test_save_dir, args.expname, index[j]),combine)
-    all_preds = np.array(all_preds)
-    all_labels = np.array(all_labels)
+    # all_preds = np.array(all_preds)
+    # all_labels = np.array(all_labels)
     # miou = compute_mean_iou(all_preds.flatten(), all_labels.flatten(), info=True)
+    all_preds_flat  = np.asarray(all_preds_flat, dtype=np.int32)   # <<< CHANGED
+    all_labels_flat = np.asarray(all_labels_flat, dtype=np.int32)  # <<< CHANGED
     end = time()
     print(f"Total Testing Time before mIoU calculation: {(end-start)/60}")
     start = time()
-    miou, precision, recall, f1 = compute_mean_iou(all_preds.flatten(), all_labels.flatten(), info=True)
+    miou, precision, recall, f1 = compute_mean_iou(all_preds_flat, all_labels_flat, info=True)
     end = time()
     print(f"Total calculation time taken: {(end-start) / 60} min")
 
