@@ -248,22 +248,22 @@ if __name__ == '__main__':
             output = model(data)
             ## loss from cross entropy is weighted sum of pixel wise loss and Canny edge loss *20
             CE_loss = criterion(output,target)
-            temp_CE.append(CE_loss)
+            temp_CE.append(CE_loss.detach().cpu())
             loss = CE_loss*(torch.from_numpy(np.ones(spatialWeights.shape)).to(torch.float32).to(device)+(spatialWeights).to(torch.float32).to(device))
             
             loss=torch.mean(loss).to(torch.float32).to(device)
             loss_dice = criterion_DICE(output,target)
-            temp_dice.append(loss_dice)
+            temp_dice.append(loss_dice.detach().cpu())
             
             loss_sl = torch.mean(criterion_SL(output.to(device),(maxDist).to(device)))
-            temp_sl.append(loss_sl.cpu())
+            temp_sl.append(loss_sl.cpu().detach().cpu())
 
             # maxDist_resized = F.interpolate(maxDist.to(device).unsqueeze(1), size=(256, 256), mode='bilinear', align_corners=False).squeeze(1)
             # loss_sl = torch.mean(criterion_SL(output.to(device), maxDist_resized))
 
             ##total loss is the weighted sum of suface loss and dice loss plus the boundary weighted cross entropy loss
             loss = (1-alpha[epoch])*loss_sl+alpha[epoch]*(loss_dice)+loss
-            temp_total.append(loss)
+            temp_total.append(loss.detach().cpu())
 #            
             predict = get_predictions(output)
             iou = mIoU(predict,labels)

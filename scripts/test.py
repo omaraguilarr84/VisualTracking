@@ -27,6 +27,35 @@ from tqdm import tqdm
 from utils import get_predictions, compute_mean_iou
 from time import time
 #%%
+def pad_collate(batch):
+    imgs, labs, idxs, spats, dists = zip(*batch)
+
+    # find the max spatial size in this batch
+    maxH = max(x.shape[-2] for x in imgs)
+    maxW = max(x.shape[-1] for x in imgs)
+
+    def pad_tensor(t, pad_value=0):
+        # ensure t is [C,H,W]
+        if t.dim() == 2:      # a label or single‐channel mask
+            t = t.unsqueeze(0)
+        C, H, W = t.shape
+        out = t.new_full((C, maxH, maxW), pad_value)
+        out[:, :H, :W] = t
+        return out
+
+    # stack each field
+    img_batch  = torch.stack([pad_tensor(img)             for img  in imgs], dim=0)
+    lab_batch  = torch.stack([pad_tensor(lab, pad_value=-1) for lab  in labs], dim=0)
+    spat_batch = torch.stack([pad_tensor(torch.from_numpy(sp).unsqueeze(0))
+                                for sp   in spats], dim=0)
+    dist_batch = torch.stack([pad_tensor(torch.from_numpy(dm)) 
+                                for dm   in dists], dim=0)
+
+    # optionally remove that extra channel dim on labels if you want [B,H,W]
+    lab_batch = lab_batch.squeeze(1)
+
+    return img_batch, lab_batch, idxs, spat_batch, dist_batch
+
 
 if __name__ == '__main__':
 
