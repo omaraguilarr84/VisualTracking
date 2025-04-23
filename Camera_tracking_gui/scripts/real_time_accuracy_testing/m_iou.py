@@ -7,22 +7,36 @@ import matplotlib.pyplot as plt
 import os
 from densenet import DenseNet2D
 from mobilenet_v1 import MobileNet2D_V1
+from mobilenet_v2 import MobileNet2D_V2
+from mobilenet_v3 import MobileNet2D_V3
+from mobilenet_v4 import MobileNet2D_V4
+from mobilenet_v5 import MobileNet2D_V5
 from PIL import Image
 from torchvision import transforms
 import utils
 import gt_masks
 from glob import glob
+from matplotlib import rcParams
 
 
-def init_model(model_path, device, dense_net=False):
+
+def init_model(model_path, device, modeltype=0):
     
     try:
         print(f"Using device: {device}")
         # Create model instance
-        if dense_net:
+        if modeltype == 0:
+            model = MobileNet2D_V1(dropout=True, prob=0.2)
+        elif modeltype == 1:
+            model = MobileNet2D_V2(dropout=True, prob=0.2)
+        elif modeltype == 2:
+            model = MobileNet2D_V3(dropout=True, prob=0.2)
+        elif modeltype == 3:
+            model = MobileNet2D_V4(dropout=True, prob=0.2)
+        elif modeltype == 4:
+            model = MobileNet2D_V5(dropout=True, prob=0.2)
+        elif modeltype == 5:
             model = DenseNet2D(dropout=True, prob=0.2)
-        else: 
-            model = MobileNet2D_V1(dropout=True,prob=0.2)
         model = model.to(device)
         
         # Load the state dictionary
@@ -87,9 +101,18 @@ def main():
     # Load model
     model_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V1.pkl"
     dense_net_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\dense_net9.pkl"
+    model2_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V2.pkl"
+    model3_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V3.pkl"
+    model4_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V4.pkl"
+    model5_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V5.pkl"
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = init_model(model_path, device, False)
-    dense_net_model = init_model(dense_net_path, device, True)
+    model = init_model(model_path, device, 0)
+    model2 = init_model(model2_path, device, 1)
+    model3 = init_model(model3_path, device, 2)
+    model4 = init_model(model4_path, device, 3)
+    model5 = init_model(model5_path, device, 4)
+    dense_net_model = init_model(dense_net_path, device, 5)
     # load pictures
     ds_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\real_time_ds"
     imageFiles = glob(os.path.join(ds_path, '*.jpg'))
@@ -106,6 +129,10 @@ def main():
 
     all_iou_scores = np.zeros((len(dataset), 3))
     all_iou_scores_dense = np.zeros((len(dataset), 3))
+    all_iou_scores2 = np.zeros((len(dataset), 3))
+    all_iou_scores3 = np.zeros((len(dataset), 3))
+    all_iou_scores4 = np.zeros((len(dataset), 3))
+    all_iou_scores5 = np.zeros((len(dataset), 3))
     i = 0
     for image_path, json_path in dataset:
         # Load image
@@ -118,8 +145,12 @@ def main():
 
         pred_masks = process_image(image, model, device)
         pred_masks_dense = process_image(image, dense_net_model, device)
+        pred_masks2 = process_image(image, model2, device)
+        pred_masks3 = process_image(image, model3, device)
+        pred_masks4 = process_image(image, model4, device)
+        pred_masks5 = process_image(image, model5, device)
 
-        # Our network
+        # MobileNetV1
         pupil_iou = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
         iris_iou = calculate_iou(pred_masks['iris'], iris_mask_gt)  
         sclera_iou = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
@@ -127,7 +158,34 @@ def main():
         all_iou_scores[i, 1] = iris_iou
         all_iou_scores[i, 2] = sclera_iou
         print(f"Image: {os.path.basename(image_path)}, Pupil IoU: {pupil_iou:.4f}, Iris IoU: {iris_iou:.4f}, Sclera IoU: {sclera_iou:.4f}")
-
+        # MobileNetV2
+        pupil_iou2 = calculate_iou(pred_masks2['pupil'], pupil_mask_gt)
+        iris_iou2 = calculate_iou(pred_masks2['iris'], iris_mask_gt)
+        sclera_iou2 = calculate_iou(pred_masks2['sclera'], sclera_mask_gt)
+        all_iou_scores2[i, 0] = pupil_iou2
+        all_iou_scores2[i, 1] = iris_iou2
+        all_iou_scores2[i, 2] = sclera_iou2
+        # MobileNetV3
+        pupil_iou3 = calculate_iou(pred_masks3['pupil'], pupil_mask_gt)
+        iris_iou3 = calculate_iou(pred_masks3['iris'], iris_mask_gt)
+        sclera_iou3 = calculate_iou(pred_masks3['sclera'], sclera_mask_gt)
+        all_iou_scores3[i, 0] = pupil_iou3
+        all_iou_scores3[i, 1] = iris_iou3
+        all_iou_scores3[i, 2] = sclera_iou3
+        # MobileNetV4
+        pupil_iou4 = calculate_iou(pred_masks4['pupil'], pupil_mask_gt)
+        iris_iou4 = calculate_iou(pred_masks4['iris'], iris_mask_gt)
+        sclera_iou4 = calculate_iou(pred_masks4['sclera'], sclera_mask_gt)
+        all_iou_scores4[i, 0] = pupil_iou4
+        all_iou_scores4[i, 1] = iris_iou4
+        all_iou_scores4[i, 2] = sclera_iou4
+        # MobileNetV5
+        pupil_iou5 = calculate_iou(pred_masks5['pupil'], pupil_mask_gt)
+        iris_iou5 = calculate_iou(pred_masks5['iris'], iris_mask_gt)
+        sclera_iou5 = calculate_iou(pred_masks5['sclera'], sclera_mask_gt)
+        all_iou_scores5[i, 0] = pupil_iou5
+        all_iou_scores5[i, 1] = iris_iou5
+        all_iou_scores5[i, 2] = sclera_iou5
         # DenseNet
         pupil_iou_dense = calculate_iou(pred_masks_dense['pupil'], pupil_mask_gt)
         iris_iou_dense = calculate_iou(pred_masks_dense['iris'], iris_mask_gt)
@@ -139,6 +197,61 @@ def main():
         i += 1
     print(f"Mean IoU: Pupil: {np.mean(all_iou_scores[:, 0]):.4f}, Iris: {np.mean(all_iou_scores[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores[:, 2]):.4f}")
     print(f"Mean DenseNet IoU: Pupil: {np.mean(all_iou_scores_dense[:, 0]):.4f}, Iris: {np.mean(all_iou_scores_dense[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores_dense[:, 2]):.4f}")
+    print(f"Mean MobileNetV2 IoU: Pupil: {np.mean(all_iou_scores2[:, 0]):.4f}, Iris: {np.mean(all_iou_scores2[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores2[:, 2]):.4f}")
+    print(f"Mean MobileNetV3 IoU: Pupil: {np.mean(all_iou_scores3[:, 0]):.4f}, Iris: {np.mean(all_iou_scores3[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores3[:, 2]):.4f}")
+    print(f"Mean MobileNetV4 IoU: Pupil: {np.mean(all_iou_scores4[:, 0]):.4f}, Iris: {np.mean(all_iou_scores4[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores4[:, 2]):.4f}")
+    print(f"Mean MobileNetV5 IoU: Pupil: {np.mean(all_iou_scores5[:, 0]):.4f}, Iris: {np.mean(all_iou_scores5[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores5[:, 2]):.4f}")
+    
+    
+    # Set Times New Roman as the font
+    rcParams['font.family'] = 'Times New Roman'
+
+    # Example IoU scores for each model
+    models = ['SERTnetV1', 'SERTnetV2', 'SERTnetV3', 'SERTnetV4', 'SERTnetV5', 'RITnet']
+    pupil_ious = [np.mean(all_iou_scores[:, 0]), np.mean(all_iou_scores2[:, 0]), np.mean(all_iou_scores3[:, 0]),
+                np.mean(all_iou_scores4[:, 0]), np.mean(all_iou_scores5[:, 0]), np.mean(all_iou_scores_dense[:, 0])]
+    iris_ious = [np.mean(all_iou_scores[:, 1]), np.mean(all_iou_scores2[:, 1]), np.mean(all_iou_scores3[:, 1]),
+                np.mean(all_iou_scores4[:, 1]), np.mean(all_iou_scores5[:, 1]), np.mean(all_iou_scores_dense[:, 1])]
+    sclera_ious = [np.mean(all_iou_scores[:, 2]), np.mean(all_iou_scores2[:, 2]), np.mean(all_iou_scores3[:, 2]),
+                np.mean(all_iou_scores4[:, 2]), np.mean(all_iou_scores5[:, 2]), np.mean(all_iou_scores_dense[:, 2])]
+
+    x = np.arange(len(models))  # Model indices
+    width = 0.25  # Width of each bar
+
+    # Define softer colors
+    colors = {
+        'pupil': '#4C72B0',  # Soft blue
+        'iris': '#55A868',   # Soft green
+        'sclera': '#C44E52'  # Soft red
+    }
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(8, 5))  # Adjust size for a paper-friendly format
+    ax.bar(x - width, pupil_ious, width, label='Pupil IoU', color=colors['pupil'])
+    ax.bar(x, iris_ious, width, label='Iris IoU', color=colors['iris'])
+    ax.bar(x + width, sclera_ious, width, label='Sclera IoU', color=colors['sclera'])
+
+    # Add labels, title, and legend
+    ax.set_xlabel('Models', fontsize=12, weight='bold')
+    ax.set_ylabel('Mean IoU', fontsize=12, weight='bold')
+    ax.set_xticks(x)
+    ax.set_xticklabels(models, rotation=45, fontsize=10)
+
+    # Adjust legend position to avoid overlapping with bars
+    ax.legend(fontsize=10, loc='upper center', bbox_to_anchor=(0.5, 0.9), ncol=3, frameon=False)
+
+    # Adjust grid and style
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.set_axisbelow(True)  # Ensure gridlines are behind bars
+
+    # Tight layout for better spacing
+    plt.tight_layout()
+
+    # Save the plot as a high-resolution image for papers
+    plt.savefig('iou_comparison_plot.png', dpi=300, bbox_inches='tight')
+
+    # Show the plot
+    plt.show()
 
 if __name__ == "__main__":
     main()
