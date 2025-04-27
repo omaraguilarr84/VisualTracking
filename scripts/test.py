@@ -117,8 +117,8 @@ if __name__ == '__main__':
             output = model(data)            
             predict = get_predictions(output)
             for p, l in zip(predict, labels):
-                all_preds_flat.extend(p.cpu().ravel())  # <<< CHANGED
-                all_labels_flat.extend(l.cpu().ravel())
+                all_preds_flat.extend(p.cpu().numpy().ravel().tolist())  # <<< CHANGED
+                all_labels_flat.extend(l.cpu().numpy().ravel().tolist())
             # all_preds_flat.append(predict)
             # all_labels_flat.append(labels)
             
@@ -145,6 +145,9 @@ if __name__ == '__main__':
     # miou = compute_mean_iou(all_preds.flatten(), all_labels.flatten(), info=True)
     all_preds_flat  = np.asarray(all_preds_flat, dtype=np.int32)   # <<< CHANGED
     all_labels_flat = np.asarray(all_labels_flat, dtype=np.int32)  # <<< CHANGED
+    keep = all_labels_flat >= 0
+    all_preds_flat  = all_preds_flat [keep]
+    all_labels_flat = all_labels_flat[keep]
     end = time()
     print(f"Total Testing Time before mIoU calculation: {(end-start)/60}")
     start = time()

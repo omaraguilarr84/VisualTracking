@@ -142,10 +142,43 @@ per-class recall:  [0.99742519 0.99729303 0.99894335 0.99988666]
 per-class f1:  [0.99742703 0.99729718 0.99894345 0.99988671]
 Total time taken: 36.84377712408702 min
 
----------------------------- Default HPs, Average Pooling ---------------------
+---------------------------- Default HPs, Average Pooling, no ROI --------------
 MOBILE_V1_AP
-per-class mIOU:  [0.99404435 0.91945121 0.96357333 0.95933045]
-per-class precision:  [0.99491687 0.994233   0.99746578 0.99969277]
-per-class recall:  [0.99489328 0.99420983 0.99745114 0.99969243]
-per-class f1:  [0.99490216 0.99422033 0.9974568  0.99969259]
-Total time taken: 9.797932132085164 min
+Total Testing Time before mIoU calculation: 3.0012100100517274
+per-class mIoU:     [0.99541535 0.94086333 0.97884314 0.97435314]
+per-class precision: [0.996075   0.99578056 0.99852427 0.99980757]
+per-class recall:    [0.99607447 0.99578757 0.99852138 0.99980637]
+per-class f1:        [0.99607473 0.99578379 0.9985226  0.99980681]
+Total calculation time taken: 26.025634610652922 min
+
+MOBILE_V2_AP
+Total Testing Time before mIoU calculation: 2.909469179312388
+per-class mIoU:     [0.99004942 0.88055278 0.95518009 0.96547059]
+per-class precision: [0.9914626  0.99120133 0.99683528 0.99973977]
+per-class recall:    [0.99145773 0.99119689 0.99683078 0.99974072]
+per-class f1:        [0.99146009 0.99119909 0.99683288 0.99974003]
+Total calculation time taken: 26.02621436516444 min
+
+MOBILE_V3_AP
+Total Testing Time before mIoU calculation: 2.9246300061543784
+per-class mIoU:     [0.99464556 0.93059977 0.97296763 0.97503897]
+per-class precision: [0.99543382 0.99502033 0.99811372 0.99981264]
+per-class recall:    [0.99541621 0.99501414 0.99809614 0.99981309]
+per-class f1:        [0.99542292 0.99501712 0.99810185 0.99981279]
+Total calculation time taken: 26.085606733957928 min
+
+MOBILE_V4_AP
+Total Testing Time before mIoU calculation: 2.909741481145223
+per-class mIoU:     [0.99640377 0.95384506 0.98319775 0.98046015]
+per-class precision: [0.99691934 0.99672852 0.99883051 0.99985361]
+per-class recall:    [0.99692167 0.99673283 0.99883119 0.99985361]
+per-class f1:        [0.99692031 0.99673051 0.99883081 0.99985361]
+Total calculation time taken: 25.97646677494049 min
+
+MOBILE_V5_AP
+Total Testing Time before mIoU calculation: 2.9051817258199057
+per-class mIoU:     [0.99578872 0.94301474 0.97863867 0.97838993]
+per-class precision: [0.99638559 0.99595143 0.99851437 0.99983801]
+per-class recall:    [0.99639069 0.99597313 0.99851752 0.99983755]
+per-class f1:        [0.99638077 0.99595661 0.99851384 0.99983774]
+Total calculation time taken: 25.946858553091683 min

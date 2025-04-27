@@ -119,7 +119,7 @@ def mIoU(predictions, targets,info=False):  ###Mean per class accuracy
     targets = targets.cpu().numpy().ravel()
     ious = []
     for index in range(num_unique_labels):
-        if index == -1:
+        if index < 0:
             # index to ignore due to pad_collate
             continue
         pred_i = predictions == index
@@ -155,34 +155,80 @@ def compute_mean_iou(flat_pred, flat_label,info=False):
     :param flat_label: flattened label matrix
     :return: mean IOU
     '''
+    flat_pred  = np.asarray(flat_pred).ravel()
+    flat_label = np.asarray(flat_label).ravel()
+
+    # find the valid classes (>= 0)
     unique_labels = np.unique(flat_label)
-    num_unique_labels = len(unique_labels)
+    unique_labels = unique_labels[unique_labels >= 0]
+    n = len(unique_labels)
 
-    Intersect = np.zeros(num_unique_labels)
-    Union = np.zeros(num_unique_labels)
-    precision = np.zeros(num_unique_labels)
-    recall = np.zeros(num_unique_labels)
-    f1 = np.zeros(num_unique_labels)
+    # pre-allocate
+    Intersect = np.zeros(n, dtype=np.float64)
+    Union     = np.zeros(n, dtype=np.float64)
+    precision = np.zeros(n, dtype=np.float64)
+    recall    = np.zeros(n, dtype=np.float64)
+    f1        = np.zeros(n, dtype=np.float64)
 
-    for index, val in tqdm(enumerate(unique_labels), total=len(unique_labels), desc="Calculating Metrics"):
-        pred_i = flat_pred == val
-        label_i = flat_label == val
-        
+    # compute per-class metrics
+    for i, lab in enumerate(unique_labels):
+        pred_i  = (flat_pred  == lab)
+        label_i = (flat_label == lab)
+
+        Intersect[i] = np.logical_and(label_i, pred_i).sum()
+        Union[i]     = np.logical_or(label_i, pred_i).sum()
+
         if info:
-            precision[index] = precision_score(pred_i, label_i, average='weighted')
-            recall[index] = recall_score(pred_i, label_i, average='weighted')
-            f1[index] = f1_score(pred_i, label_i, average='weighted')
-        
-        Intersect[index] = float(np.sum(np.logical_and(label_i, pred_i)))
-        Union[index] = float(np.sum(np.logical_or(label_i, pred_i)))
+            # sklearn expects (y_true, y_pred)
+            precision[i] = precision_score(label_i, pred_i,
+                                           average='weighted',
+                                           zero_division=0)
+            recall[i]    = recall_score   (label_i, pred_i,
+                                           average='weighted',
+                                           zero_division=0)
+            f1[i]        = f1_score       (label_i, pred_i,
+                                           average='weighted',
+                                           zero_division=0)
 
+    # optional logging
     if info:
-        print ("per-class mIOU: ", Intersect / Union)
-        print ("per-class precision: ", precision)
-        print ("per-class recall: ", recall)
-        print ("per-class f1: ", f1)
+        print("per-class mIoU:    ", Intersect / Union)
+        print("per-class precision:", precision)
+        print("per-class recall:   ", recall)
+        print("per-class f1:       ", f1)
+
     mean_iou = np.mean(Intersect / Union)
-    return mean_iou, precision, recall, f1
+    return float(mean_iou), precision, recall, f1
+    # unique_labels = np.unique(flat_label)
+    # # drop any negative / padding label
+    # num_unique_labels = [l for l in unique_labels if l >= 0]
+    # # num_unique_labels = len(unique_labels)
+
+    # Intersect = np.zeros(num_unique_labels)
+    # Union = np.zeros(num_unique_labels)
+    # precision = np.zeros(num_unique_labels)
+    # recall = np.zeros(num_unique_labels)
+    # f1 = np.zeros(num_unique_labels)
+
+    # for index, val in tqdm(enumerate(unique_labels), total=len(unique_labels), desc="Calculating Metrics"):
+    #     pred_i = flat_pred == val
+    #     label_i = flat_label == val
+        
+    #     if info:
+    #         precision[index] = precision_score(pred_i, label_i, average='weighted')
+    #         recall[index] = recall_score(pred_i, label_i, average='weighted')
+    #         f1[index] = f1_score(pred_i, label_i, average='weighted')
+        
+    #     Intersect[index] = float(np.sum(np.logical_and(label_i, pred_i)))
+    #     Union[index] = float(np.sum(np.logical_or(label_i, pred_i)))
+
+    # if info:
+    #     print ("per-class mIOU: ", Intersect / Union)
+    #     print ("per-class precision: ", precision)
+    #     print ("per-class recall: ", recall)
+    #     print ("per-class f1: ", f1)
+    # mean_iou = np.mean(Intersect / Union)
+    # return float(mean_iou), precision, recall, f1
 
 def total_metric(nparams,miou):
     S = nparams * 4.0 /  (1024 * 1024)
