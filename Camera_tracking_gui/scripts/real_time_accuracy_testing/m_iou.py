@@ -125,10 +125,10 @@ def main():
     model4_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V4.pkl"
     model5_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V5.pkl"
     model6_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V1_AP_ROI9.pkl"
-    model7_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V2_AP_ROI9.pkl"
-    model8_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V3_AP_ROI9.pkl"
-    model9_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V4_AP_ROI9.pkl"
-    model10_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILE_V5_AP_ROI9.pkl"
+    model7_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILENET_V2_AP_ROI9.pkl"
+    model8_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILENET_V3_AP_ROI9.pkl"
+    model9_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILENET_V4_AP_ROI9.pkl"
+    model10_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_MOBILENET_V5_AP_ROI9.pkl"
     dense_net_ap_path = r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\real_time_accuracy_testing\TRAIN_OG_AP_ROI9.pkl"
 
 
@@ -187,6 +187,12 @@ def main():
         pred_masks3 = process_image(image, model3, device)
         pred_masks4 = process_image(image, model4, device)
         pred_masks5 = process_image(image, model5, device)
+        pred_masks6 = process_image(image, model6, device)
+        pred_masks7 = process_image(image, model7, device)
+        pred_masks8 = process_image(image, model8, device)
+        pred_masks9 = process_image(image, model9, device)
+        pred_masks10 = process_image(image, model10, device)
+        pred_masks_dense_ap = process_image(image, dense_net_ap_model, device)
 
         # MobileNetV1
         pupil_iou = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
@@ -232,44 +238,44 @@ def main():
         all_iou_scores_dense[i, 1] = iris_iou_dense
         all_iou_scores_dense[i, 2] = sclera_iou_dense
         #MobileNetV1_AP
-        pupil_iou6 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
-        iris_iou6 = calculate_iou(pred_masks['iris'], iris_mask_gt)
-        sclera_iou6 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        pupil_iou6 = calculate_iou(pred_masks6['pupil'], pupil_mask_gt)
+        iris_iou6 = calculate_iou(pred_masks6['iris'], iris_mask_gt)
+        sclera_iou6 = calculate_iou(pred_masks6['sclera'], sclera_mask_gt)
         all_iou_scores6[i, 0] = pupil_iou6
         all_iou_scores6[i, 1] = iris_iou6
         all_iou_scores6[i, 2] = sclera_iou6
         #MobileNetV2_AP
-        pupil_iou7 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
-        iris_iou7 = calculate_iou(pred_masks['iris'], iris_mask_gt)
-        sclera_iou7 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        pupil_iou7 = calculate_iou(pred_masks7['pupil'], pupil_mask_gt)
+        iris_iou7 = calculate_iou(pred_masks7['iris'], iris_mask_gt)
+        sclera_iou7 = calculate_iou(pred_masks7['sclera'], sclera_mask_gt)
         all_iou_scores7[i, 0] = pupil_iou7
         all_iou_scores7[i, 1] = iris_iou7
         all_iou_scores7[i, 2] = sclera_iou7
         #MobileNetV3_AP
-        pupil_iou8 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
-        iris_iou8 = calculate_iou(pred_masks['iris'], iris_mask_gt)
-        sclera_iou8 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        pupil_iou8 = calculate_iou(pred_masks8['pupil'], pupil_mask_gt)
+        iris_iou8 = calculate_iou(pred_masks8['iris'], iris_mask_gt)
+        sclera_iou8 = calculate_iou(pred_masks8['sclera'], sclera_mask_gt)
         all_iou_scores8[i, 0] = pupil_iou8
         all_iou_scores8[i, 1] = iris_iou8
         all_iou_scores8[i, 2] = sclera_iou8
         #MobileNetV4_AP
-        pupil_iou9 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
-        iris_iou9 = calculate_iou(pred_masks['iris'], iris_mask_gt)
-        sclera_iou9 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        pupil_iou9 = calculate_iou(pred_masks9['pupil'], pupil_mask_gt)
+        iris_iou9 = calculate_iou(pred_masks9['iris'], iris_mask_gt)
+        sclera_iou9 = calculate_iou(pred_masks9['sclera'], sclera_mask_gt)
         all_iou_scores9[i, 0] = pupil_iou9
         all_iou_scores9[i, 1] = iris_iou9
         all_iou_scores9[i, 2] = sclera_iou9
         #MobileNetV5_AP
-        pupil_iou10 = calculate_iou(pred_masks['pupil'], pupil_mask_gt)
-        iris_iou10 = calculate_iou(pred_masks['iris'], iris_mask_gt)
-        sclera_iou10 = calculate_iou(pred_masks['sclera'], sclera_mask_gt)
+        pupil_iou10 = calculate_iou(pred_masks10['pupil'], pupil_mask_gt)
+        iris_iou10 = calculate_iou(pred_masks10['iris'], iris_mask_gt)
+        sclera_iou10 = calculate_iou(pred_masks10['sclera'], sclera_mask_gt)
         all_iou_scores10[i, 0] = pupil_iou10
         all_iou_scores10[i, 1] = iris_iou10
         all_iou_scores10[i, 2] = sclera_iou10
         #DenseNet_AP
-        pupil_iou_dense_ap = calculate_iou(pred_masks_dense['pupil'], pupil_mask_gt)
-        iris_iou_dense_ap = calculate_iou(pred_masks_dense['iris'], iris_mask_gt)
-        sclera_iou_dense_ap = calculate_iou(pred_masks_dense['sclera'], sclera_mask_gt)
+        pupil_iou_dense_ap = calculate_iou(pred_masks_dense_ap['pupil'], pupil_mask_gt)
+        iris_iou_dense_ap = calculate_iou(pred_masks_dense_ap['iris'], iris_mask_gt)
+        sclera_iou_dense_ap = calculate_iou(pred_masks_dense_ap['sclera'], sclera_mask_gt)
         all_iou_scores_dense_ap[i, 0] = pupil_iou_dense_ap
         all_iou_scores_dense_ap[i, 1] = iris_iou_dense_ap
         all_iou_scores_dense_ap[i, 2] = sclera_iou_dense_ap
@@ -282,7 +288,12 @@ def main():
     print(f"Mean MobileNetV3 IoU: Pupil: {np.mean(all_iou_scores3[:, 0]):.4f}, Iris: {np.mean(all_iou_scores3[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores3[:, 2]):.4f}")
     print(f"Mean MobileNetV4 IoU: Pupil: {np.mean(all_iou_scores4[:, 0]):.4f}, Iris: {np.mean(all_iou_scores4[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores4[:, 2]):.4f}")
     print(f"Mean MobileNetV5 IoU: Pupil: {np.mean(all_iou_scores5[:, 0]):.4f}, Iris: {np.mean(all_iou_scores5[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores5[:, 2]):.4f}")
-    
+    print(f"Mean MobileNetV1_AP IoU: Pupil: {np.mean(all_iou_scores6[:, 0]):.4f}, Iris: {np.mean(all_iou_scores6[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores6[:, 2]):.4f}")
+    print(f"Mean MobileNetV2_AP IoU: Pupil: {np.mean(all_iou_scores7[:, 0]):.4f}, Iris: {np.mean(all_iou_scores7[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores7[:, 2]):.4f}")
+    print(f"Mean MobileNetV3_AP IoU: Pupil: {np.mean(all_iou_scores8[:, 0]):.4f}, Iris: {np.mean(all_iou_scores8[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores8[:, 2]):.4f}")
+    print(f"Mean MobileNetV4_AP IoU: Pupil: {np.mean(all_iou_scores9[:, 0]):.4f}, Iris: {np.mean(all_iou_scores9[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores9[:, 2]):.4f}")
+    print(f"Mean MobileNetV5_AP IoU: Pupil: {np.mean(all_iou_scores10[:, 0]):.4f}, Iris: {np.mean(all_iou_scores10[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores10[:, 2]):.4f}")
+    print(f"Mean DenseNet_AP IoU: Pupil: {np.mean(all_iou_scores_dense_ap[:, 0]):.4f}, Iris: {np.mean(all_iou_scores_dense_ap[:, 1]):.4f}, Sclera: {np.mean(all_iou_scores_dense_ap[:, 2]):.4f}")
     
     # Set Times New Roman as the font
     rcParams['font.family'] = 'Times New Roman'
@@ -305,6 +316,11 @@ def main():
         'iris': '#55A868',   # Soft green
         'sclera': '#C44E52'  # Soft red
     }
+
+    ## Data copied from original validation with openEDS:
+
+
+
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(8, 5))  # Adjust size for a paper-friendly format

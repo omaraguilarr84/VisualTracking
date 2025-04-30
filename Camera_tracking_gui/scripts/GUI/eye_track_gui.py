@@ -86,7 +86,7 @@ def run_segmentation():
                 real_time_segment_path = os.path.join(current_dir, "real_time_segment.py")
                 
                 # Run the script as a subprocess with the camera index argument
-                cmd = [sys.executable, real_time_segment_path, "--camera", str(cam_index)]
+                cmd = [sys.executable, real_time_segment_path]
                 process = subprocess.Popen(cmd)
                 
                 # Wait for the process to complete

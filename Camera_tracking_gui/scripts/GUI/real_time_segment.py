@@ -7,17 +7,19 @@ import matplotlib.pyplot as plt
 import os
 from densenet import DenseNet2D
 from mobilenet_v1 import MobileNet2D_V1
+from mobilenet_v1_AP import MobileNet2D_V1_AP
 from PIL import Image
 from torchvision import transforms
 import utils
 import datetime
 import argparse
+from AutoROI_model import LightweightBBoxCNN
 
 def init_model(model_path, device):
     try:
         print(f"Using device: {device}")
         # Create model instance
-        model = MobileNet2D_V1(dropout=True,prob=0.2)
+        model = MobileNet2D_V1_AP(dropout=True,prob=0.2)
         model = model.to(device)
         
         # Load the state dictionary
@@ -46,8 +48,16 @@ def main(camera_index=0):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Use the correct path to the model file
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(script_dir, 'TRAIN_MOBILE_V1.pkl')
+    model_path = os.path.join(script_dir, 'TRAIN_MOBILE_V1_AP_ROI9.pkl')
     model = init_model(model_path, device)
+
+    # Initialize AutoROI model
+    auto_roi_model = LightweightBBoxCNN(hidden_size=64)  # Adjust hidden size if needed
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    auto_roi_model_path = os.path.join(script_dir, 'ppaug_cp_e50.pth')
+    auto_roi_model.load_state_dict(torch.load(r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\GUI\optim_cp_e50", map_location=device))
+    auto_roi_model = auto_roi_model.to(device)
+    auto_roi_model.eval()
 
     # Initialize webcam with the specified camera index
     cap = cv2.VideoCapture(camera_index)
@@ -71,6 +81,11 @@ def main(camera_index=0):
         transforms.Normalize([0.5], [0.5])
     ])
 
+    roi_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((64, 64))
+    ])
+
     # Video recording settings
     record_video = False
     recording_start_time = 0
@@ -85,6 +100,7 @@ def main(camera_index=0):
     #############
     # Main loop #
     #############
+    prevImage = None
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -103,9 +119,33 @@ def main(camera_index=0):
         img_tensor = img_tensor.unsqueeze(0)
         img_tensor = img_tensor.to(device)
 
-        with torch.no_grad():
-            output = model(img_tensor)
-        
+        if prevImage is None:
+            with torch.no_grad():
+                output = model(img_tensor)
+        else:
+            with torch.no_grad():
+                gray_roi = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                img_t = roi_transform(gray_roi).to(device)
+                gray_prev = cv2.cvtColor(prevImage, cv2.COLOR_BGR2GRAY)
+                pre_img_t = roi_transform(gray_prev).to(device)
+                diff = img_t - pre_img_t
+                roi_input_tensor = torch.cat((img_t, diff), dim=0).unsqueeze(0)
+                with torch.no_grad():
+                    bbox = auto_roi_model(roi_input_tensor).squeeze(0)
+
+                w, h = frame.shape[1], frame.shape[0]
+                xmin = int(max(0, min(bbox[0], w-1)))
+                xmax = int(max(0, min(bbox[1], w-1)))
+                ymin = int(max(0, min(bbox[2], h-1)))
+                ymax = int(max(0, min(bbox[3], h-1)))
+                roi_frame = frame[ymin:ymax, xmin:xmax]
+                gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
+                pil_image = Image.fromarray(gray_frame)
+                img_tensor = transform(pil_image)
+                img_tensor = img_tensor.unsqueeze(0)
+                img_tensor = img_tensor.to(device)
+                output = model(img_tensor)
+
         # Get prediction map using utils.get_predictions
         pred_map = utils.get_predictions(output)
         pred_img = pred_map.cpu().numpy() / 3.0  # Scale to [0, 1] range
@@ -114,7 +154,13 @@ def main(camera_index=0):
         pred_bgr = cv2.cvtColor((pred_img * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
         
         # Resize original frame and prediction to display size
-        frame_display = cv2.resize(frame, (display_width, display_height))
+        if prevImage is None:
+            frame_display = cv2.resize(frame, (display_width, display_height))
+        else:
+            bbox_frame = frame.copy()
+            cv2.rectangle(bbox_frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+            frame_display = cv2.resize(bbox_frame, (display_width, display_height))
+        
         pred_display = cv2.resize(pred_bgr, (display_width, display_height))
         
         # Concatenate original and prediction horizontally
@@ -170,7 +216,7 @@ def main(camera_index=0):
         
         # Display the combined frame
         cv2.imshow('Webcam Feed and Prediction', combined_frame)
-        
+        prevImage = frame
         #########################
         # Handle keyboard input #
         #########################
@@ -204,9 +250,9 @@ def main(camera_index=0):
 
 if __name__ == "__main__":
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Real-time eye segmentation')
-    parser.add_argument('--camera', type=int, default=0, help='Camera index (0 for built-in, 1 for USB)')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description='Real-time eye segmentation')
+    # parser.add_argument('--camera', type=int, default=0, help='Camera index (0 for built-in, 1 for USB)')
+    # args = parser.parse_args()
     
     # Run the main function with the specified camera index
-    main(args.camera) 
+    main(1) 

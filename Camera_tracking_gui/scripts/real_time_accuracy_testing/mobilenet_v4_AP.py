@@ -17,7 +17,7 @@ import torch
 import math
 import torch.nn as nn
 import torch.nn.functional as F
-from .opt import parse_args
+from opt import parse_args
 
 args = parse_args()
 
