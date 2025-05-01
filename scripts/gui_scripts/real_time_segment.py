@@ -1,0 +1,258 @@
+import cv2
+import numpy as np
+import time
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import os
+from densenet import DenseNet2D
+from mobilenet_v1 import MobileNet2D_V1
+from mobilenet_v1_AP import MobileNet2D_V1_AP
+from PIL import Image
+from torchvision import transforms
+import utils
+import datetime
+import argparse
+from AutoROI_model import LightweightBBoxCNN
+
+def init_model(model_path, device):
+    try:
+        print(f"Using device: {device}")
+        # Create model instance
+        model = MobileNet2D_V1_AP(dropout=True,prob=0.2)
+        model = model.to(device)
+        
+        # Load the state dictionary
+        if not os.path.exists(model_path):
+            print(f"Error: Model file not found at {model_path}")
+            return
+            
+        model.load_state_dict(torch.load(model_path))
+        model = model.to(device)
+        model.eval()
+        print("Model loaded successfully")
+        return model
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        return
+
+
+def main(camera_index=0):
+    """
+    Run real-time eye segmentation on webcam feed.
+    
+    Args:
+        camera_index (int): Index of the camera to use (0 for built-in, 1 for USB)
+    """
+    # Initialize model
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Use the correct path to the model file
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(script_dir, 'TRAIN_MOBILE_V1_AP_ROI9.pkl')
+    model = init_model(model_path, device)
+
+    # Initialize AutoROI model
+    auto_roi_model = LightweightBBoxCNN(hidden_size=64)  # Adjust hidden size if needed
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    auto_roi_model_path = os.path.join(script_dir, 'ppaug_cp_e50.pth')
+    auto_roi_model.load_state_dict(torch.load(r"C:\Users\hayde\OneDrive\Documents\Y5S2\Machine_Learning_for_Biosci\Project1_updated_021125\VisualTracking\Camera_tracking_gui\scripts\GUI\optim_cp_e50", map_location=device))
+    auto_roi_model = auto_roi_model.to(device)
+    auto_roi_model.eval()
+
+    # Initialize webcam with the specified camera index
+    cap = cv2.VideoCapture(camera_index)
+    if not cap.isOpened():
+        print(f"Error: Could not open webcam with index {camera_index}")
+        return
+    print(f"Webcam opened successfully. Using camera index: {camera_index}")
+    print("Press 'q' to quit.")
+    
+    # Initialize variables for FPS calculation
+    prev_time = 0
+    fps = 0
+    
+    # Display size
+    display_width = 640 
+    display_height = 480
+
+    # Define the transform
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize([0.5], [0.5])
+    ])
+
+    roi_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((64, 64))
+    ])
+
+    # Video recording settings
+    record_video = False
+    recording_start_time = 0
+    recording_duration = 45
+    frame_count = 0
+    output_folder = None
+    video_writer = None
+    
+    print(f"Press 'r' to start recording a {recording_duration}-second video")
+    print(f"Press 'q' to quit")
+
+    #############
+    # Main loop #
+    #############
+    prevImage = None
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Can't receive frame")
+            break
+            
+        # Calculate FPS
+        current_time = time.time()
+        fps = 1 / (current_time - prev_time) if (current_time - prev_time) > 0 else 0
+        prev_time = current_time
+        
+        # prepare frame for model
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        pil_image = Image.fromarray(gray_frame)
+        img_tensor = transform(pil_image)
+        img_tensor = img_tensor.unsqueeze(0)
+        img_tensor = img_tensor.to(device)
+
+        if prevImage is None:
+            with torch.no_grad():
+                output = model(img_tensor)
+        else:
+            with torch.no_grad():
+                gray_roi = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                img_t = roi_transform(gray_roi).to(device)
+                gray_prev = cv2.cvtColor(prevImage, cv2.COLOR_BGR2GRAY)
+                pre_img_t = roi_transform(gray_prev).to(device)
+                diff = img_t - pre_img_t
+                roi_input_tensor = torch.cat((img_t, diff), dim=0).unsqueeze(0)
+                with torch.no_grad():
+                    bbox = auto_roi_model(roi_input_tensor).squeeze(0)
+
+                w, h = frame.shape[1], frame.shape[0]
+                xmin = int(max(0, min(bbox[0], w-1)))
+                xmax = int(max(0, min(bbox[1], w-1)))
+                ymin = int(max(0, min(bbox[2], h-1)))
+                ymax = int(max(0, min(bbox[3], h-1)))
+                roi_frame = frame[ymin:ymax, xmin:xmax]
+                gray_frame = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
+                pil_image = Image.fromarray(gray_frame)
+                img_tensor = transform(pil_image)
+                img_tensor = img_tensor.unsqueeze(0)
+                img_tensor = img_tensor.to(device)
+                output = model(img_tensor)
+
+        # Get prediction map using utils.get_predictions
+        pred_map = utils.get_predictions(output)
+        pred_img = pred_map.cpu().numpy() / 3.0  # Scale to [0, 1] range
+        pred_img = pred_img.squeeze(0)
+        
+        pred_bgr = cv2.cvtColor((pred_img * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
+        
+        # Resize original frame and prediction to display size
+        if prevImage is None:
+            frame_display = cv2.resize(frame, (display_width, display_height))
+        else:
+            bbox_frame = frame.copy()
+            cv2.rectangle(bbox_frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+            frame_display = cv2.resize(bbox_frame, (display_width, display_height))
+        
+        pred_display = cv2.resize(pred_bgr, (display_width, display_height))
+        
+        # Concatenate original and prediction horizontally
+        combined_frame = np.hstack((frame_display, pred_display))
+        
+        # Add FPS text to the frame
+        cv2.putText(combined_frame, f'FPS: {fps:.1f}', (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        
+        # Add labels for each image
+        cv2.putText(combined_frame, 'Original', (10, 60), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        cv2.putText(combined_frame, 'Prediction', (display_width + 10, 60), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        
+        #####################
+        # Recording Actions #
+        #####################
+        if record_video:
+            elapsed_time = current_time - recording_start_time
+            remaining_time = recording_duration - elapsed_time
+            if remaining_time > 0:
+                cv2.putText(combined_frame, f'Recording: {remaining_time:.1f}s', (10, 90), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                
+                # Write frame to video file
+                if video_writer is not None:
+                    video_writer.write(combined_frame)
+                
+                ## Comment next line out to enable saving frames
+                output_folder = False
+                # Save original and prediction frames
+                if output_folder:
+                    # Format frame number with leading zeros
+                    frame_str = f"{frame_count:03d}"
+                    
+                    # Save original frame
+                    og_path = os.path.join(output_folder, f"{frame_str}og.jpg")
+                    cv2.imwrite(og_path, frame_display)
+                    
+                    # Save prediction frame
+                    pred_path = os.path.join(output_folder, f"{frame_str}pred.jpg")
+                    cv2.imwrite(pred_path, pred_display)
+                    
+                    frame_count += 1
+            else:
+                # Stop recording after the specified duration
+                record_video = False
+                if video_writer is not None:
+                    video_writer.release()
+                    video_writer = None
+                print(f"Recording completed. Video saved to {output_folder}.mp4")
+        
+        # Display the combined frame
+        cv2.imshow('Webcam Feed and Prediction', combined_frame)
+        prevImage = frame
+        #########################
+        # Handle keyboard input #
+        #########################
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+        elif key == ord('r') and not record_video:
+            # Create timestamp-based folder name
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_folder = f"video_frames_{timestamp}"
+            
+            # Create the folder if it doesn't exist
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+            
+            # Initialize video writer
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            video_path = f"{output_folder}.mp4"
+            video_writer = cv2.VideoWriter(video_path, fourcc, 30.0, (display_width*2, display_height))
+            
+            recording_start_time = current_time
+            record_video = True
+            frame_count = 0
+            print(f"Recording started. Will save video to {video_path}")
+    
+    # Release the webcam and close windows
+    if video_writer is not None:
+        video_writer.release()
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    # parser = argparse.ArgumentParser(description='Real-time eye segmentation')
+    # parser.add_argument('--camera', type=int, default=0, help='Camera index (0 for built-in, 1 for USB)')
+    # args = parser.parse_args()
+    
+    # Run the main function with the specified camera index
+    main(1) 
